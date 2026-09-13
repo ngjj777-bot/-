@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>肉鸽地牢 · 像素战斗</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  body {
+    background: #0b0e14; display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; margin: 0; padding: 6px; font-family: 'Courier New', monospace;
+    overflow: hidden;
+  }
+  .game-wrapper {
+    background: #1a1e26; padding: 8px; border-radius: 22px;
+    box-shadow: 0 10px 0 #0d1017, 0 16px 24px rgba(0,0,0,0.7);
+    border: 2px solid #4e5b73; max-width: 440px; width: 100%;
+    position: relative;
+  }
+  canvas {
+    display: block; width: 100%; height: auto; aspect-ratio: 1/1;
+    border-radius: 14px; box-shadow: inset 0 0 30px #00000055, 0 0 0 2px #2e3848;
+    background: #0f1219; image-rendering: pixelated;
+  }
+  .info-panel {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px; color: #cbd5e6; padding: 5px 12px;
+    background: #0f1219; border-radius: 50px; border: 2px solid #3f4a5c;
+    font-weight: bold; font-size: 0.75rem; flex-wrap: wrap; gap: 5px;
+  }
+  .hp-wrap { display: flex; align-items: center; gap: 5px; }
+  .hp-bar-outer {
+    width: 60px; height: 13px; background: #2a1218; border-radius: 10px;
+    border: 1px solid #6b3a4a; overflow: hidden;
+  }
+  .hp-bar-inner {
+    height: 100%; background: linear-gradient(90deg,#ff4d6d,#ff8fa3); width: 100%;
+    transition: width 0.15s; border-radius: 10px;
+  }
+  .stat { background: #1e2532; padding: 2px 7px; border-radius: 30px; border: 1px solid #4e6188; color: #b7e1fa; font-size: 0.68rem; }
+  .stat.shield { background: #1e3a4e; border-color: #5fa3cc; color: #a0d8ff; }
+  .equip-bar {
+    display: flex; gap: 4px; margin-top: 6px; padding: 4px 8px;
+    background: #0f1219; border-radius: 14px; border: 1px solid #2e3848;
+    font-size: 0.62rem; color: #8b9bb5; justify-content: center; flex-wrap: wrap;
+  }
+  .equip-slot {
+    background: #1b212c; padding: 2px 6px; border-radius: 8px;
+    border: 1px dashed #3f4a5c; color: #6f8099; min-width: 52px; text-align: center;
+  }
+  .equip-slot.filled { border-style: solid; border-color: #d4af37; color: #d4af37; background: #241d0e; }
+  .skill-bar {
+    display: flex; gap: 6px; margin-top: 6px; padding: 4px 8px;
+    background: #0f1219; border-radius: 14px; border: 1px solid #2e3848;
+    justify-content: center; align-items: center;
+  }
+  .skill-info {
+    font-size: 0.68rem; color: #a0c0e0; flex: 1; text-align: center;
+  }
+  .skill-btn {
+    background: #6a3a9e; border: 2px solid #a06ad0; color: #fff;
+    font-family: inherit; font-weight: bold; font-size: 0.7rem;
+    padding: 5px 10px; border-radius: 20px; cursor: pointer;
+    box-shadow: 0 3px 0 #0d1017; touch-action: manipulation;
+    white-space: nowrap;
+  }
+  .skill-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #0d1017; }
+  .skill-btn.cooling { background: #3a2a4e; border-color: #5a4a6e; color: #7a6a8e; }
+  .controls {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px; gap: 6px;
+  }
+  .dpad {
+    display: grid; grid-template-columns: 52px 52px 52px; grid-template-rows: 52px 52px 52px;
+    gap: 5px; background: #0f1219; padding: 6px; border-radius: 80px;
+    border: 2px solid #3f4a5c; box-shadow: inset 0 0 15px #00000088;
+  }
+  .dpad-btn {
+    background: #2e3b4e; border: none; color: #eaf0ff; font-size: 1.4rem;
+    font-weight: bold; border-radius: 16px; display: flex; align-items: center;
+    justify-content: center; box-shadow: 0 4px 0 #0d1017; border: 1px solid #6b7fa0;
+    font-family: inherit; touch-action: manipulation;
+  }
+  .dpad-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #0d1017; background: #3e4f68; }
+  .dpad-btn.empty { visibility: hidden; pointer-events: none; }
+  .action-area { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .action-btn {
+    width: 68px; height: 68px; border-radius: 50%; border: none;
+    font-family: inherit; font-weight: bold; font-size: 0.8rem; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 5px 0 #0d1017; touch-action: manipulation;
+    letter-spacing: 1px;
+  }
+  .attack-btn { background: #b33a3a; border: 2px solid #e66565; }
+  .attack-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #0d1017; background: #8f2a2a; }
+  .defend-btn { background: #2e7a9e; border: 2px solid #5fa3cc; }
+  .defend-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #0d1017; background: #1f5c78; }
+  .defend-btn.active { background: #4ab3e6; border-color: #a8dcff; box-shadow: 0 0 18px #5fc8ff; }
+  .reset-btn {
+    background: #4a3e5c; border: none; color: #eaf0ff; font-family: inherit;
+    font-weight: bold; font-size: 0.7rem; padding: 4px 10px; border-radius: 30px;
+    box-shadow: 0 3px 0 #0d1017; border: 1px solid #7a6b9e;
+  }
+  .reset-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #0d1017; }
+    .skill-select-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: #0a0c10ee; border-radius: 22px;
+    display: none; justify-content: center; align-items: center;
+    z-index: 100; padding: 12px;
+  }
+  .skill-select-overlay.show { display: flex; }
+  .skill-select-box {
+    background: #1a1e26; border: 2px solid #d4af37; border-radius: 16px;
+    padding: 14px; width: 100%; max-height: 100%; overflow-y: auto;
+  }
+  .skill-select-title {
+    color: #ffd966; font-weight: bold; text-align: center;
+    font-size: 1rem; margin-bottom: 10px;
+  }
+  .skill-card {
+    background: #0f1219; border: 2px solid #4e6188; border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
+    transition: all 0.1s;
+  }
+  .skill-card:active { background: #2a3444; border-color: #d4af37; }
+  .skill-card .skill-name { color: #a0e0ff; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px; }
+  .skill-card .skill-desc { color: #8b9bb5; font-size: 0.7rem; line-height: 1.4; }
+  .swap-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: #0a0c10ee; border-radius: 22px;
+    display: none; justify-content: center; align-items: center;
+    z-index: 110; padding: 12px;
+  }
+  .swap-overlay.show { display: flex; }
+  .swap-box {
+    background: #1a1e26; border: 2px solid #d4af37; border-radius: 16px;
+    padding: 14px; width: 100%; max-width: 320px;
+  }
+  .swap-title {
+    color: #ffd966; font-weight: bold; text-align: center;
+    font-size: 0.95rem; margin-bottom: 10px;
+  }
+  .swap-item {
+    background: #0f1219; border: 2px solid #4e6188; border-radius: 10px;
+    padding: 8px 10px; margin-bottom: 8px;
+  }
+  .swap-item .item-label {
+    color: #8b9bb5; font-size: 0.65rem; margin-bottom: 2px;
+  }
+  .swap-item .item-name {
+    color: #a0e0ff; font-weight: bold; font-size: 0.85rem;
+  }
+  .swap-item .item-desc {
+    color: #d4af37; font-size: 0.7rem; margin-top: 2px;
+  }
+  .swap-item.new { border-color: #ffd966; background: #241d0e; }
+  .swap-buttons {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .swap-btn {
+    flex: 1; padding: 8px; border-radius: 20px; border: none;
+    font-family: inherit; font-weight: bold; font-size: 0.78rem;
+    color: #fff; cursor: pointer; box-shadow: 0 3px 0 #0d1017;
+    touch-action: manipulation;
+  }
+  .swap-btn.yes { background: #2e8a4e; border: 2px solid #5fcc7e; }
+  .swap-btn.no { background: #8a4e3a; border: 2px solid #cc8a6a; }
+  .swap-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #0d1017; }
+  @media (max-width: 380px) {
+    .dpad { grid-template-columns: 46px 46px 46px; grid-template-rows: 46px 46px 46px; gap: 4px; }
+    .dpad-btn { font-size: 1.2rem; border-radius: 14px; }
+    .action-btn { width: 58px; height: 58px; font-size: 0.7rem; }
+  }
+</style>
+</head>
+<body>
+<div class="game-wrapper">
+  <canvas id="gameCanvas" width="480" height="480"></canvas>
+
+  <div class="info-panel">
+    <div class="hp-wrap">
+      <span>❤️</span>
+      <div class="hp-bar-outer"><div class="hp-bar-inner" id="hpBar"></div></div>
+      <span id="hpText">10/10</span>
+    </div>
+    <span class="stat">🗡️ <span id="atkText">1</span></span>
+    <span class="stat">🏰 <span id="floorText">1</span>/10</span>
+    <span class="stat">💀 <span id="killText">0</span></span>
+    <span class="stat">👾 <span id="enemyCountText">0/0</span></span>
+    <span class="stat shield" id="shieldStat" style="display:none;">🛡 <span id="shieldText">0</span></span>
+  </div>
+
+  <div class="equip-bar">
+    <span class="equip-slot" id="slotAtk">攻击: 空</span>
+    <span class="equip-slot" id="slotDef1">防御1: 空</span>
+    <span class="equip-slot" id="slotDef2">防御2: 空</span>
+  </div>
+
+  <div class="skill-bar">
+    <span class="skill-info" id="skillInfo">技能: 未选择</span>
+    <button class="skill-btn" id="skillBtn">释放</button>
+  </div>
+
+  <div class="controls">
+    <div class="dpad">
+      <button class="dpad-btn empty" disabled></button>
+      <button class="dpad-btn" data-dir="up">▲</button>
+      <button class="dpad-btn empty" disabled></button>
+      <button class="dpad-btn" data-dir="left">◀</button>
+      <button class="dpad-btn empty" disabled></button>
+      <button class="dpad-btn" data-dir="right">▶</button>
+      <button class="dpad-btn empty" disabled></button>
+      <button class="dpad-btn" data-dir="down">▼</button>
+      <button class="dpad-btn empty" disabled></button>
+    </div>
+    <div class="action-area">
+      <button class="action-btn attack-btn" id="attackBtn">攻击</button>
+      <button class="action-btn defend-btn" id="defendBtn">防御</button>
+      <button class="reset-btn" id="resetBtn">重开</button>
+    </div>
+  </div>
+
+  <div class="skill-select-overlay" id="skillSelectOverlay">
+    <div class="skill-select-box">
+      <div class="skill-select-title">⚔️ 开局选择技能 ⚔️</div>
+      <div class="skill-card" data-skill="punch">
+        <div class="skill-name">👊 轰拳</div>
+        <div class="skill-desc">范围内所有敌人5秒内每0.5秒扣0.5血（共5点）。释放期间玩家不能移动，但获得90%免伤。冷却10秒。</div>
+      </div>
+      <div class="skill-card" data-skill="bloodslash">
+        <div class="skill-name">🩸 血斩</div>
+        <div class="skill-desc">对最近的敌人造成10点伤害，自己回复5点生命。冷却10秒。（需有敌人才能释放）</div>
+      </div>
+      <div class="skill-card" data-skill="shieldfist">
+        <div class="skill-name">🥊 护盾拳</div>
+        <div class="skill-desc">主动：对最近敌人造成8点伤害。被动：用此技能击杀敌人时，获得1层护盾（最多5层，每层抵挡1次伤害）。冷却10秒。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="swap-overlay" id="swapOverlay">
+    <div class="swap-box">
+      <div class="swap-title" id="swapTitle">发现装备！</div>
+      <div class="swap-item new">
+        <div class="item-label">新装备</div>
+        <div class="item-name" id="swapNewName">-</div>
+        <div class="item-desc" id="swapNewDesc">-</div>
+      </div>
+      <div class="swap-item">
+        <div class="item-label" id="swapCurLabel">当前装备</div>
+        <div class="item-name" id="swapCurName">-</div>
+        <div class="item-desc" id="swapCurDesc">-</div>
+      </div>
+      <div class="swap-buttons">
+        <button class="swap-btn yes" id="swapYes">交换</button>
+        <button class="swap-btn no" id="swapNo">丢弃</button>
+      </div>
+    </div>
+  </div>
+</di<script>
+(function(){
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const hpBar = document.getElementById('hpBar');
+  const hpText = document.getElementById('hpText');
+  const atkText = document.getElementById('atkText');
+  const floorText = document.getElementById('floorText');
+  const killText = document.getElementById('killText');
+  const enemyCountText = document.getElementById('enemyCountText');
+  const shieldStat = document.getElementById('shieldStat');
+  const shieldText = document.getElementById('shieldText');
+  const slotAtk = document.getElementById('slotAtk');
+  const slotDef1 = document.getElementById('slotDef1');
+  const slotDef2 = document.getElementById('slotDef2');
+  const defendBtn = document.getElementById('defendBtn');
+  const skillBtn = document.getElementById('skillBtn');
+  const skillInfo = document.getElementById('skillInfo');
+  const skillSelectOverlay = document.getElementById('skillSelectOverlay');
+  const swapOverlay = document.getElementById('swapOverlay');
+  const swapTitle = document.getElementById('swapTitle');
+  const swapNewName = document.getElementById('swapNewName');
+  const swapNewDesc = document.getElementById('swapNewDesc');
+  const swapCurLabel = document.getElementById('swapCurLabel');
+  const swapCurName = document.getElementById('swapCurName');
+  const swapCurDesc = document.getElementById('swapCurDesc');
+  const swapYes = document.getElementById('swapYes');
+  const swapNo = document.getElementById('swapNo');
+
+  const images = {};
+  const imgSources = {
+    player: 'player.png', boss: 'boss.png',
+    grunt: 'grunt.png', boar: 'boar.png', archer: 'archer.png',
+  };
+  for (const key in imgSources) {
+    const img = new Image();
+    img.src = imgSources[key];
+    images[key] = img;
+  }
+
+  const WORLD_SIZE = 1800;
+  const VIEW_SIZE = 480;
+  const PLAYER_SIZE = 34;
+  const BASE_SPEED = 2.4;
+  const BASE_HP = 10;
+  const BASE_ATK = 1;
+  const ATTACK_RANGE = 52;
+  const ATTACK_COOLDOWN = 400;
+  const DEFEND_DURATION = 400;
+  const SKILL_CD = 10000;
+  const MINIMAP_SIZE = 110;
+
+  const ENEMY_TYPES = {
+    grunt:  { hp: 10, atk: 2, speed: 1.1, size: 30, color: '#6a9d4a', name: '小兵',   range: 40, atkCooldown: 900 },
+    archer: { hp: 15, atk: 5, speed: 0.9, size: 28, color: '#5b8c5a', name: '弓手',   range: 240, atkCooldown: 1600, ranged: true },
+    boar:   { hp: 20, atk: 6, speed: 1.7, size: 40, color: '#7a5230', name: '野猪骑士', range: 44, atkCooldown: 1100 },
+    boss:   { hp: 35, atk: 5, speed: 0.95, size: 56, color: '#c9a227', name: '大将军', range: 60, atkCooldown: 1000 },
+  };
+
+  const ATK_EQUIPS = [
+    { name: '木剑', atk: 2, desc: '+2 攻击' },
+    { name: '铁剑', atk: 5, desc: '+5 攻击' },
+    { name: '血剑', atk: 4, desc: '+4 攻击, 命中回血2', lifesteal: 2 },
+    { name: '铁棍', atk: 2, desc: '+2 攻击, 50%暴击再+3', crit: 0.5, critBonus: 3 },
+    { name: '大刀', atk: 3, desc: '+3 攻击' },
+    { name: '弓箭', atk: 4, desc: '+4 攻击, 远程攻击', ranged: true, range: 260 },
+    { name: '毒弓', atk: 2, desc: '+2 攻击, 远程, 中毒每秒-2血(3秒)', ranged: true, range: 260, poison: true, poisonDps: 2, poisonDuration: 3000 },
+  ];
+
+  const DEF_EQUIPS = [
+    { name: '废物帽', hp: 1, desc: '+1 血' },
+    { name: '大胸甲', hp: 5, desc: '+5 血' },
+    { name: '高手帽', hp: 4, desc: '+4 血' },
+    { name: '铁盾', hp: 3, desc: '+3血, 远程免伤50%', rangedResist: 0.5 },
+    { name: '闪避鞋', hp: 0, desc: '20%闪避所有伤害', dodge: 0.2 },
+    { name: '小皮鞋', hp: 0, desc: '移动速度增加40%', speedBoost: 1.4 },
+    { name: '战斗旗', hp: 0, desc: '每层+当前层数×3血量', battleFlag: true },
+  ];
+
+  let player = {
+    x: WORLD_SIZE/2, y: WORLD_SIZE/2,
+    hp: BASE_HP, maxHp: BASE_HP, baseAtk: BASE_ATK,
+    facing: 0, defending: false, defendTimer: 0,
+    attackTimer: 0, hitFlash: 0, attackAnim: 0,
+    equipAtk: null, equipDef: [null, null],
+    skill: null, skillCdTimer: 0,
+    punchTimer: 0, punchTickTimer: 0, frozen: false,
+    shieldLayers: 0,
+    stunTimer: 0,
+  };
+
+  let enemies = [], chests = [], projectiles = [], particles = [];
+  let portal = null;
+  let floor = 1, killCount = 0;
+  let floorEnemyTotal = 0;
+  let gameOver = false, gameWin = false;
+  let message = '', messageTimer = 0;
+  let choosingSkill = false;
+  let swapping = false;
+  let pendingEquip = null;
+
+  let camera = { x: 0, y: 0 };
+  let keys = { up:false, down:false, left:false, right:false };
+
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+  function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  function getTotalAtk() {
+    let atk = player.baseAtk;
+    if (player.equipAtk) atk += player.equipAtk.atk;
+    return atk;
+  }
+
+  function getTotalMaxHp() {
+    let hp = BASE_HP;
+    player.equipDef.forEach(e => {
+      if (!e) return;
+      if (e.battleFlag) hp += floor * 3;
+      else hp += e.hp || 0;
+    });
+    return hp;
+  }
+
+  function getPlayerSpeed() {
+    let spd = BASE_SPEED;
+    player.equipDef.forEach(e => {
+      if (e && e.speedBoost) spd *= e.speedBoost;
+    });
+    return spd;
+  }
+
+  function hasDefEquip(predicate) {
+    return player.equipDef.some(e => e && predicate(e));
+  }
+
+  function recalcMaxHp() {
+    const newMax = getTotalMaxHp();
+    const diff = newMax - player.maxHp;
+    player.maxHp = newMax;
+    if (diff > 0) player.hp = Math.min(player.hp + diff, player.maxHp);
+    else player.hp = Math.min(player.hp, player.maxHp);
+  }
+
+  function isSameEquip(a, b) {
+    if (!a || !b) return false;
+    return a.name === b.name;
+  }v>
+    
+function generateFloor(floorNum) {
+  enemies = []; chests = []; projectiles = []; particles = []; portal = null;
+  player.x = WORLD_SIZE/2; player.y = WORLD_SIZE/2;
+
+  const chestSlots = [ { type: 'atk' }, { type: 'random' }, { type: 'random' } ];
+  for (let i = chestSlots.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [chestSlots[i], chestSlots[j]] = [chestSlots[j], chestSlots[i]];
+  }
+
+  for (let i = 0; i < 3; i++) {
+    let px, py, tries = 0;
+    do {
+      px = rand(150, WORLD_SIZE - 150);
+      py = rand(150, WORLD_SIZE - 150);
+      tries++;
+    } while (Math.hypot(px - player.x, py - player.y) < 200 && tries < 50);
+    chests.push({ x: px, y: py, opened: false, size: 28, chestType: chestSlots[i].type });
+  }
+
+  let enemyList = [];
+  if (floorNum <= 3) {
+    const n = randInt(3, 5);
+    for (let i = 0; i < n; i++) enemyList.push('grunt');
+  } else if (floorNum <= 6) {
+    const g = randInt(3, 5), a = randInt(1, 3);
+    for (let i = 0; i < g; i++) enemyList.push('grunt');
+    for (let i = 0; i < a; i++) enemyList.push('archer');
+  } else if (floorNum <= 9) {
+    const g = randInt(2, 4), a = randInt(1, 3), b = randInt(1, 2);
+    for (let i = 0; i < g; i++) enemyList.push('grunt');
+    for (let i = 0; i < a; i++) enemyList.push('archer');
+    for (let i = 0; i < b; i++) enemyList.push('boar');
+  } else {
+    enemyList.push('boss');
+    const g = randInt(2, 3);
+    for (let i = 0; i < g; i++) enemyList.push('grunt');
+    const a = randInt(1, 2);
+    for (let i = 0; i < a; i++) enemyList.push('archer');
+  }
+
+  enemyList.forEach(type => {
+    const cfg = ENEMY_TYPES[type];
+    let ex, ey, tries = 0;
+    do {
+      ex = rand(80, WORLD_SIZE - 80);
+      ey = rand(80, WORLD_SIZE - 80);
+      tries++;
+    } while (Math.hypot(ex - player.x, ey - player.y) < 280 && tries < 80);
+    enemies.push({
+      type, x: ex, y: ey, hp: cfg.hp, maxHp: cfg.hp,
+      atk: cfg.atk, speed: cfg.speed, size: cfg.size,
+      color: cfg.color, name: cfg.name, range: cfg.range,
+      atkCooldown: cfg.atkCooldown, atkTimer: rand(0, 600),
+      hitFlash: 0, state: 'idle', ranged: cfg.ranged || false,
+      wanderAngle: rand(0, Math.PI * 2), wanderTimer: 0, attackAnim: 0,
+      poisonTimer: 0, poisonDps: 0,
+      stunTimer: 0,
+      skillTimer1: 0, skillTimer2: 0, skillTimer3: 0,
+    });
+  });
+
+  floorEnemyTotal = enemies.length;
+  recalcMaxHp();
+  updateCamera(true);
+  message = `第 ${floorNum} 层 · 敌人 ${enemies.length}`;
+  messageTimer = 1800;
+  updateUI();
+}
+
+function doAttack() {
+  if (gameOver || gameWin || choosingSkill || swapping) return;
+  if (player.frozen || player.stunTimer > 0) return;
+  if (player.attackTimer > 0) return;
+  player.attackTimer = ATTACK_COOLDOWN;
+  player.attackAnim = 150;
+
+  const baseAtk = getTotalAtk();
+  const atkEquip = player.equipAtk;
+
+  if (atkEquip && atkEquip.ranged) {
+    let nearest = null, nd = Infinity;
+    enemies.forEach(e => {
+      const d = dist(player, e);
+      if (d < nd && d < (atkEquip.range || 260)) { nd = d; nearest = e; }
+    });
+    if (nearest) {
+      const ang = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+      projectiles.push({
+        x: player.x, y: player.y,
+        vx: Math.cos(ang) * 7, vy: Math.sin(ang) * 7,
+        damage: baseAtk, life: 1200, color: '#d0e0a0',
+        fromPlayer: true,
+      });
+    }
+    return;
+  }
+
+  enemies.forEach(e => {
+    const d = dist(player, e);
+    if (d < ATTACK_RANGE + e.size/2) {
+      let dmg = baseAtk;
+      if (atkEquip && atkEquip.crit && Math.random() < atkEquip.crit) {
+        dmg += atkEquip.critBonus;
+      }
+      e.hp -= dmg;
+      e.hitFlash = 150;
+
+      if (atkEquip && atkEquip.lifesteal) {
+        player.hp = Math.min(player.hp + atkEquip.lifesteal, player.maxHp);
+      }
+      if (atkEquip && atkEquip.poison) {
+        e.poisonTimer = atkEquip.poisonDuration;
+        e.poisonDps = atkEquip.poisonDps;
+      }
+
+      const ang = Math.atan2(e.y - player.y, e.x - player.x);
+      e.x += Math.cos(ang) * 10;
+      e.y += Math.sin(ang) * 10;
+      e.x = clamp(e.x, 20, WORLD_SIZE - 20);
+      e.y = clamp(e.y, 20, WORLD_SIZE - 20);
+      if (e.hp <= 0) killEnemy(e, 'attack');
+    }
+  });
+
+  particles.push({ x: player.x, y: player.y, life: 200, maxLife: 200, type: 'slash', radius: ATTACK_RANGE });
+}
+
+function killEnemy(e, killer) {
+  enemies = enemies.filter(en => en !== e);
+  killCount++;
+  for (let i = 0; i < 12; i++) {
+    particles.push({
+      x: e.x, y: e.y, vx: rand(-3, 3), vy: rand(-3, 3),
+      life: 400, maxLife: 400, color: e.color, size: rand(2, 5),
+    });
+  }
+
+  if (player.skill === 'shieldfist' && player.shieldLayers < 5) {
+    player.shieldLayers += 1;
+    message = `🥊 护盾拳击杀！护盾 +1（当前 ${player.shieldLayers}/5）`;
+    messageTimer = 1500;
+  }
+
+  if (e.type === 'boss') {
+    gameWin = true;
+    message = '🏆 你击败了大将军！';
+    messageTimer = 999999;
+  }
+  updateUI();
+}
+
+function damagePlayer(amount, isRanged) {
+  if (player.defending) return false;
+  if (player.stunTimer > 0) return false;
+
+  if (hasDefEquip(e => e.dodge) && Math.random() < 0.2) {
+    particles.push({
+      x: player.x, y: player.y,
+      life: 500, maxLife: 500, type: 'dodge',
+    });
+    message = '💨 闪避！';
+    messageTimer = 800;
+    return false;
+  }
+
+  let dmg = amount;
+
+  if (player.punchTimer > 0) {
+    dmg = Math.max(1, Math.round(dmg * 0.1));
+  }
+
+  if (isRanged && hasDefEquip(e => e.rangedResist)) {
+    dmg = Math.max(1, Math.round(dmg * 0.5));
+  }
+
+  if (player.shieldLayers > 0) {
+    player.shieldLayers -= 1;
+    message = `🛡 护盾抵挡！剩余 ${player.shieldLayers} 层`;
+    messageTimer = 1200;
+    updateUI();
+    return false;
+  }
+
+  player.hp -= dmg;
+  player.hitFlash = 200;
+  if (player.hp <= 0) { player.hp = 0; gameOver = true; }
+  updateUI();
+  return true;
+}
+
+function useSkill() {
+  if (gameOver || gameWin || choosingSkill || swapping) return;
+  if (!player.skill) return;
+  if (player.skillCdTimer > 0) return;
+  if (player.stunTimer > 0) return;
+
+  if (player.skill === 'punch') {
+    player.punchTimer = 5000;
+    player.punchTickTimer = 0;
+    player.frozen = true;
+    player.skillCdTimer = SKILL_CD;
+    message = '👊 轰拳！持续5秒范围伤害，免伤90%';
+    messageTimer = 2000;
+    punchTick();
+  } else if (player.skill === 'bloodslash') {
+    let nearest = null, nd = Infinity;
+    enemies.forEach(e => {
+      const d = dist(player, e);
+      if (d < nd) { nd = d; nearest = e; }
+    });
+    if (!nearest) {
+      message = '🩸 附近没有敌人，无法血斩';
+      messageTimer = 1500;
+      return;
+    }
+    nearest.hp -= 10;
+    nearest.hitFlash = 200;
+    player.hp = Math.min(player.hp + 5, player.maxHp);
+    for (let i = 0; i < 20; i++) {
+      particles.push({
+        x: nearest.x, y: nearest.y,
+        vx: rand(-5, 5), vy: rand(-5, 5),
+        life: 500, maxLife: 500, color: '#e03050', size: rand(3, 6),
+      });
+    }
+    if (nearest.hp <= 0) killEnemy(nearest, 'bloodslash');
+    message = '🩸 血斩！造成10伤害，回复5血';
+    messageTimer = 2000;
+    player.skillCdTimer = SKILL_CD;
+  } else if (player.skill === 'shieldfist') {
+    let nearest = null, nd = Infinity;
+    enemies.forEach(e => {
+      const d = dist(player, e);
+      if (d < nd) { nd = d; nearest = e; }
+    });
+    if (nearest) {
+      nearest.hp -= 8;
+      nearest.hitFlash = 200;
+      for (let i = 0; i < 12; i++) {
+        particles.push({
+          x: nearest.x, y: nearest.y,
+          vx: rand(-4, 4), vy: rand(-4, 4),
+          life: 400, maxLife: 400, color: '#6ad0ff', size: rand(2, 5),
+        });
+      }
+      if (nearest.hp <= 0) killEnemy(nearest, 'shieldfist');
+      message = '🥊 护盾拳攻击！';
+      messageTimer = 1500;
+    } else {
+      message = '🥊 附近无敌人';
+      messageTimer = 1200;
+      return;
+    }
+    player.skillCdTimer = SKILL_CD;
+  }
+  updateUI();
+}
+
+function punchTick() {
+  if (player.punchTimer <= 0) return;
+  enemies.forEach(e => {
+    const d = dist(player, e);
+    if (d < 110) {
+      e.hp -= 0.5;
+      e.hitFlash = 100;
+      if (e.hp <= 0) killEnemy(e, 'punch');
+    }
+  });
+  particles.push({
+    x: player.x, y: player.y,
+    life: 300, maxLife: 300, type: 'punch', radius: 110,
+  });
+  updateUI();
+        }
+  function updateEnemies(dt) {
+  enemies.forEach(e => {
+    e.atkTimer -= dt;
+    if (e.hitFlash > 0) e.hitFlash -= dt;
+    if (e.attackAnim > 0) e.attackAnim -= dt;
+    if (e.skillTimer1 > 0) e.skillTimer1 -= dt;
+    if (e.skillTimer2 > 0) e.skillTimer2 -= dt;
+    if (e.skillTimer3 > 0) e.skillTimer3 -= dt;
+
+    if (e.poisonTimer > 0) {
+      e.poisonTimer -= dt;
+      e.hp -= e.poisonDps * (dt / 1000);
+      if (e.hp <= 0) {
+        killEnemy(e, 'poison');
+        return;
+      }
+    }
+
+    const d = dist(player, e);
+    const ang = Math.atan2(player.y - e.y, player.x - e.x);
+    const detectRange = e.ranged ? 360 : 280;
+    const attackRange = e.ranged ? e.range : (e.range + e.size/2 + PLAYER_SIZE/2);
+
+    if (e.type === 'boss' && d < detectRange) {
+      if (d < 90 && e.skillTimer1 <= 0) {
+        e.skillTimer1 = 5000;
+        e.attackAnim = 300;
+        damagePlayer(5, false);
+        const knockAng = Math.atan2(player.y - e.y, player.x - e.x);
+        player.x += Math.cos(knockAng) * 120;
+        player.y += Math.sin(knockAng) * 120;
+        player.x = clamp(player.x, PLAYER_SIZE/2, WORLD_SIZE - PLAYER_SIZE/2);
+        player.y = clamp(player.y, PLAYER_SIZE/2, WORLD_SIZE - PLAYER_SIZE/2);
+        player.stunTimer = 2000;
+        message = '💥 大将军重垂！被弹飞并眩晕2秒';
+        messageTimer = 2000;
+        return;
+      }
+
+      if (d > 100 && d < 400 && e.skillTimer2 <= 0) {
+        e.skillTimer2 = 3500;
+        projectiles.push({
+          x: e.x, y: e.y,
+          vx: Math.cos(ang) * 7, vy: Math.sin(ang) * 7,
+          damage: 5, life: 1600, color: '#ff6a3a',
+          fromPlayer: false, isBossSkill: true,
+        });
+        message = '⚔️ 大将军飞斩！';
+        messageTimer = 1500;
+      }
+
+      if (e.skillTimer3 <= 0 && d < 200) {
+        e.skillTimer3 = 6000;
+        player.hp -= 8;
+        player.hitFlash = 300;
+        if (player.hp <= 0) { player.hp = 0; gameOver = true; }
+        for (let i = 0; i < 20; i++) {
+          particles.push({
+            x: player.x, y: player.y,
+            vx: rand(-5, 5), vy: rand(-5, 5),
+            life: 600, maxLife: 600, color: '#ff3060', size: rand(3, 6),
+          });
+        }
+        message = '💢 大将军破盾！真实伤害 8 点';
+        messageTimer = 2000;
+        updateUI();
+        return;
+      }
+    }
+
+    if (e.state === 'chase' || d < detectRange) {
+      e.state = 'chase';
+      if (e.ranged) {
+        if (d > e.range * 0.85) {
+          e.x += Math.cos(ang) * e.speed;
+          e.y += Math.sin(ang) * e.speed;
+        } else if (d < e.range * 0.5) {
+          e.x -= Math.cos(ang) * e.speed * 0.6;
+          e.y -= Math.sin(ang) * e.speed * 0.6;
+        }
+        if (d < e.range && e.atkTimer <= 0) {
+          e.atkTimer = e.atkCooldown;
+          projectiles.push({
+            x: e.x, y: e.y,
+            vx: Math.cos(ang) * 5.5, vy: Math.sin(ang) * 5.5,
+            damage: e.atk, life: 1400, color: '#d0e0a0',
+            fromPlayer: false,
+          });
+        }
+      } else {
+        if (d > attackRange * 0.85) {
+          e.x += Math.cos(ang) * e.speed;
+          e.y += Math.sin(ang) * e.speed;
+        }
+        if (d < attackRange && e.atkTimer <= 0) {
+          e.atkTimer = e.atkCooldown;
+          e.attackAnim = 200;
+          const dmg = e.type === 'boss' ? 5 : e.atk;
+          damagePlayer(dmg, false);
+        }
+      }
+    } else {
+      e.wanderTimer -= dt;
+      if (e.wanderTimer <= 0) {
+        e.wanderTimer = rand(800, 2000);
+        e.wanderAngle = rand(0, Math.PI * 2);
+      }
+      e.x += Math.cos(e.wanderAngle) * e.speed * 0.3;
+      e.y += Math.sin(e.wanderAngle) * e.speed * 0.3;
+    }
+
+    e.x = clamp(e.x, e.size, WORLD_SIZE - e.size);
+    e.y = clamp(e.y, e.size, WORLD_SIZE - e.size);
+  });
+
+  for (let i = 0; i < enemies.length; i++) {
+    for (let j = i + 1; j < enemies.length; j++) {
+      const a = enemies[i], b = enemies[j];
+      const dd = dist(a, b);
+      const minD = a.size/2 + b.size/2;
+      if (dd < minD && dd > 0.01) {
+        const overlap = (minD - dd) / 2;
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        a.x -= Math.cos(ang) * overlap * 0.5;
+        a.y -= Math.sin(ang) * overlap * 0.5;
+        b.x += Math.cos(ang) * overlap * 0.5;
+        b.y += Math.sin(ang) * overlap * 0.5;
+      }
+    }
+  }
+}
+
+function updateProjectiles(dt) {
+  projectiles.forEach(p => {
+    p.x += p.vx * (dt / 16);
+    p.y += p.vy * (dt / 16);
+    p.life -= dt;
+
+    if (p.fromPlayer) {
+      for (const e of enemies) {
+        const d = Math.hypot(p.x - e.x, p.y - e.y);
+        if (d < e.size/2 + 6) {
+          const atkEquip = player.equipAtk;
+          let dmg = p.damage;
+          if (atkEquip && atkEquip.crit && Math.random() < atkEquip.crit) {
+            dmg += atkEquip.critBonus;
+          }
+          e.hp -= dmg;
+          e.hitFlash = 150;
+          if (atkEquip && atkEquip.poison) {
+            e.poisonTimer = atkEquip.poisonDuration;
+            e.poisonDps = atkEquip.poisonDps;
+          }
+          if (e.hp <= 0) killEnemy(e, 'projectile');
+          p.life = 0;
+          break;
+        }
+      }
+    } else {
+      const d = Math.hypot(p.x - player.x, p.y - player.y);
+      if (d < PLAYER_SIZE/2 + 6) {
+        damagePlayer(p.damage, true);
+        p.life = 0;
+        for (let i = 0; i < 5; i++) {
+          particles.push({
+            x: p.x, y: p.y, vx: rand(-2, 2), vy: rand(-2, 2),
+            life: 300, maxLife: 300, color: '#d0e0a0', size: rand(2, 4),
+          });
+        }
+      }
+    }
+  });
+  projectiles = projectiles.filter(p => p.life > 0);
+}
+
+function checkChest() {
+  chests.forEach(c => {
+    if (c.opened) return;
+    const d = Math.hypot(c.x - player.x, c.y - player.y);
+    if (d < PLAYER_SIZE/2 + c.size/2 + 6) {
+      c.opened = true;
+      openChest(c);
+    }
+  });
+}
+
+function openChest(chest) {
+  let isAtk;
+  if (chest.chestType === 'atk') isAtk = true;
+  else isAtk = Math.random() < 0.4;
+
+  for (let i = 0; i < 14; i++) {
+    particles.push({
+      x: chest.x, y: chest.y, vx: rand(-4, 4), vy: rand(-4, 4),
+      life: 600, maxLife: 600, color: '#d4af37', size: rand(2, 4),
+    });
+  }
+
+  if (isAtk) {
+    const eq = ATK_EQUIPS[randInt(0, ATK_EQUIPS.length - 1)];
+    handleEquipDrop(eq, 'atk');
+  } else {
+    const eq = DEF_EQUIPS[randInt(0, DEF_EQUIPS.length - 1)];
+    handleEquipDrop(eq, 'def');
+  }
+}
+
+function handleEquipDrop(eq, type) {
+  if (type === 'atk') {
+    const cur = player.equipAtk;
+    if (!cur) {
+      player.equipAtk = eq;
+      message = `获得攻击装备：${eq.name}（${eq.desc}）`;
+      messageTimer = 2500;
+      updateUI();
+      return;
+    }
+    if (isSameEquip(cur, eq)) {
+      message = `开出 ${eq.name}，与当前装备相同，自动丢弃`;
+      messageTimer = 2500;
+      updateUI();
+      return;
+    }
+    showSwapDialog(eq, 'atk', null);
+  } else {
+    const emptyIdx = player.equipDef.findIndex(e => e === null);
+    if (emptyIdx !== -1) {
+      player.equipDef[emptyIdx] = eq;
+      recalcMaxHp();
+      message = `获得防御装备：${eq.name}（${eq.desc}）`;
+      messageTimer = 2500;
+      updateUI();
+      return;
+    }
+    const sameIdx = player.equipDef.findIndex(e => e && isSameEquip(e, eq));
+    if (sameIdx !== -1) {
+      message = `开出 ${eq.name}，与当前装备相同，自动丢弃`;
+      messageTimer = 2500;
+      updateUI();
+      return;
+    }
+    showSwapDialog(eq, 'def', null);
+  }
+}
+
+function showSwapDialog(newEq, type, slotIdx) {
+  pendingEquip = { item: newEq, type: type, slotIndex: slotIdx };
+  swapping = true;
+
+  swapTitle.textContent = type === 'atk' ? '⚔️ 攻击装备交换' : '🛡 防御装备交换';
+  swapNewName.textContent = newEq.name;
+  swapNewDesc.textContent = newEq.desc;
+
+  if (type === 'atk') {
+    swapCurLabel.textContent = '当前攻击装备';
+    swapCurName.textContent = player.equipAtk ? player.equipAtk.name : '（空）';
+    swapCurDesc.textContent = player.equipAtk ? player.equipAtk.desc : '';
+  } else {
+    const weakerIdx = player.equipDef[0].hp <= player.equipDef[1].hp ? 0 : 1;
+    pendingEquip.slotIndex = weakerIdx;
+    swapCurLabel.textContent = `当前防御装备（槽${weakerIdx+1}）`;
+    swapCurName.textContent = player.equipDef[weakerIdx].name;
+    swapCurDesc.textContent = player.equipDef[weakerIdx].desc;
+  }
+
+  swapOverlay.classList.add('show');
+}
+
+function closeSwapDialog() {
+  swapOverlay.classList.remove('show');
+  swapping = false;
+  pendingEquip = null;
+}
+
+function confirmSwap() {
+  if (!pendingEquip) return;
+  const { item, type, slotIndex } = pendingEquip;
+  if (type === 'atk') {
+    const oldName = player.equipAtk ? player.equipAtk.name : '空';
+    player.equipAtk = item;
+    message = `替换攻击装备：${oldName} → ${item.name}`;
+  } else {
+    const oldName = player.equipDef[slotIndex].name;
+    player.equipDef[slotIndex] = item;
+    recalcMaxHp();
+    message = `替换防御装备：${oldName} → ${item.name}`;
+  }
+  messageTimer = 2500;
+  closeSwapDialog();
+  updateUI();
+ }
+  function updatePlayer(dt) {
+  if (gameOver || gameWin || choosingSkill || swapping) return;
+
+  if (player.skillCdTimer > 0) player.skillCdTimer = Math.max(0, player.skillCdTimer - dt);
+  if (player.stunTimer > 0) {
+    player.stunTimer -= dt;
+    player.defending = false;
+    defendBtn.classList.remove('active');
+    if (player.hitFlash > 0) player.hitFlash -= dt;
+    // 眩晕期间什么都不做
+    return;
+  }
+
+  if (player.punchTimer > 0) {
+    player.punchTimer -= dt;
+    player.punchTickTimer -= dt;
+    if (player.punchTickTimer <= 0) {
+      player.punchTickTimer = 500;
+      punchTick();
+    }
+    if (player.punchTimer <= 0) {
+      player.frozen = false;
+      player.punchTimer = 0;
+    }
+  } else {
+    player.frozen = false;
+  }
+
+  if (!player.frozen) {
+    let mx = 0, my = 0;
+    if (keys.left) mx -= 1;
+    if (keys.right) mx += 1;
+    if (keys.up) my -= 1;
+    if (keys.down) my += 1;
+    if (mx !== 0 || my !== 0) {
+      const len = Math.hypot(mx, my);
+      mx /= len; my /= len;
+      const spd = getPlayerSpeed();
+      player.x += mx * spd * (dt / 16);
+      player.y += my * spd * (dt / 16);
+      player.facing = Math.abs(mx) > Math.abs(my) ? (mx > 0 ? 0 : 2) : (my > 0 ? 1 : 3);
+    }
+    player.x = clamp(player.x, PLAYER_SIZE/2, WORLD_SIZE - PLAYER_SIZE/2);
+    player.y = clamp(player.y, PLAYER_SIZE/2, WORLD_SIZE - PLAYER_SIZE/2);
+  }
+
+  if (player.attackTimer > 0) player.attackTimer -= dt;
+  if (player.hitFlash > 0) player.hitFlash -= dt;
+  if (player.attackAnim > 0) player.attackAnim -= dt;
+
+  if (player.defendTimer > 0) {
+    player.defendTimer -= dt;
+    player.defending = true;
+    defendBtn.classList.add('active');
+  } else {
+    player.defending = false;
+    defendBtn.classList.remove('active');
+  }
+
+  checkChest();
+  checkPortal();
+}
+
+function checkPortal() {
+  if (gameWin || gameOver || choosingSkill || swapping) return;
+  if (enemies.length === 0 && !portal && floor < 10) {
+    portal = { x: player.x + 70, y: player.y, size: 36, timer: 0 };
+    message = '敌人已清！进入传送门去下一层';
+    messageTimer = 3000;
+  }
+  if (portal) {
+    portal.timer += 16;
+    const d = Math.hypot(portal.x - player.x, portal.y - player.y);
+    if (d < PLAYER_SIZE/2 + portal.size/2) {
+      floor++;
+      generateFloor(floor);
+    }
+  }
+}
+
+function updateCamera(instant) {
+  const targetX = clamp(player.x - VIEW_SIZE/2, 0, WORLD_SIZE - VIEW_SIZE);
+  const targetY = clamp(player.y - VIEW_SIZE/2, 0, WORLD_SIZE - VIEW_SIZE);
+  if (instant) { camera.x = targetX; camera.y = targetY; }
+  else {
+    camera.x += (targetX - camera.x) * 0.15;
+    camera.y += (targetY - camera.y) * 0.15;
+  }
+}
+
+function drawSprite(img, cx, cy, size, flip, fallbackColor, fallbackLetter) {
+  ctx.save();
+  ctx.fillStyle = '#00000066';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + size*0.42, size*0.42, size*0.18, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.save();
+    if (flip) {
+      ctx.translate(cx, cy);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, -size/2, -size/2, size, size);
+    } else {
+      ctx.drawImage(img, cx - size/2, cy - size/2, size, size);
+    }
+    ctx.restore();
+  } else {
+    ctx.fillStyle = fallbackColor;
+    ctx.beginPath();
+    ctx.arc(cx, cy, size/2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${size*0.6}px "Courier New"`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(fallbackLetter || '?', cx, cy);
+  }
+}
+
+function drawMinimap() {
+  const mx = W - MINIMAP_SIZE - 12;
+  const my = 12;
+  const scale = MINIMAP_SIZE / WORLD_SIZE;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(10, 14, 22, 0.85)';
+  ctx.fillRect(mx, my, MINIMAP_SIZE, MINIMAP_SIZE);
+  ctx.strokeStyle = '#5f7a9e';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(mx, my, MINIMAP_SIZE, MINIMAP_SIZE);
+
+  chests.forEach(c => {
+    if (c.opened) return;
+    const px = mx + c.x * scale;
+    const py = my + c.y * scale;
+    ctx.fillStyle = '#d4af37';
+    ctx.fillRect(px - 2, py - 2, 4, 4);
+  });
+
+  if (portal) {
+    const px = mx + portal.x * scale;
+    const py = my + portal.y * scale;
+    ctx.fillStyle = '#b06ad0';
+    ctx.beginPath();
+    ctx.arc(px, py, 4, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  enemies.forEach(e => {
+    const px = mx + e.x * scale;
+    const py = my + e.y * scale;
+    ctx.fillStyle = e.type === 'boss' ? '#ffd700' : '#ff4d4d';
+    const r = e.type === 'boss' ? 4 : 3;
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  const px = mx + player.x * scale;
+  const py = my + player.y * scale;
+  ctx.fillStyle = '#4ab3e6';
+  ctx.beginPath();
+  ctx.arc(px, py, 4, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#c0e6ff';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#b9c7e0';
+  ctx.font = 'bold 10px "Courier New"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('地图', mx + MINIMAP_SIZE/2, my + MINIMAP_SIZE + 4);
+
+  ctx.font = '9px "Courier New"';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4ab3e6';
+  ctx.fillText('●你', mx + 4, my + MINIMAP_SIZE + 18);
+  ctx.fillStyle = '#ff4d4d';
+  ctx.fillText('●敌', mx + 4, my + MINIMAP_SIZE + 30);
+  ctx.fillStyle = '#d4af37';
+  ctx.fillText('●箱', mx + 4, my + MINIMAP_SIZE + 42);
+
+  ctx.restore();
+}
+    function render() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0f1219';
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(-camera.x, -camera.y);
+
+    const gridSize = 40;
+    const startX = Math.floor(camera.x / gridSize) * gridSize;
+    const startY = Math.floor(camera.y / gridSize) * gridSize;
+    const endX = camera.x + W + gridSize;
+    const endY = camera.y + H + gridSize;
+    for (let x = startX; x < endX; x += gridSize) {
+      for (let y = startY; y < endY; y += gridSize) {
+        const cx = Math.floor(x / gridSize), cy = Math.floor(y / gridSize);
+        const isDark = (cx + cy) % 2 === 0;
+        ctx.fillStyle = isDark ? '#141922' : '#181e28';
+        ctx.fillRect(x, y, gridSize, gridSize);
+        ctx.fillStyle = '#1f2632';
+        ctx.fillRect(x + 6, y + 6, 2, 2);
+        ctx.fillRect(x + gridSize - 10, y + gridSize - 10, 2, 2);
+      }
+    }
+
+    ctx.strokeStyle = '#3e4a5e';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+    ctx.strokeStyle = '#5f7a9e';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(2, 2, WORLD_SIZE - 4, WORLD_SIZE - 4);
+
+    chests.forEach(c => {
+      if (c.opened) {
+        ctx.fillStyle = '#3a3020';
+        ctx.fillRect(c.x - c.size/2, c.y - c.size/2, c.size, c.size);
+        ctx.strokeStyle = '#1a1508';
+        ctx.strokeRect(c.x - c.size/2, c.y - c.size/2, c.size, c.size);
+      } else {
+        const glow = 0.5 + 0.5 * Math.sin(Date.now() / 200);
+        ctx.fillStyle = '#5a4020';
+        ctx.fillRect(c.x - c.size/2, c.y - c.size/2, c.size, c.size);
+        ctx.fillStyle = `rgba(212, 175, 55, ${glow})`;
+        ctx.fillRect(c.x - c.size/2 + 3, c.y - c.size/2 + 3, c.size - 6, c.size - 6);
+        ctx.fillStyle = '#2a1f0e';
+        ctx.fillRect(c.x - c.size/2, c.y - c.size/2, c.size, 4);
+        ctx.fillStyle = '#d4af37';
+        ctx.fillRect(c.x - 3, c.y - 3, 6, 6);
+      }
+    });
+
+    if (portal) {
+      const pulse = 0.7 + 0.3 * Math.sin(portal.timer / 150);
+      ctx.save();
+      ctx.globalAlpha = 0.6 + 0.3 * pulse;
+      ctx.fillStyle = '#7ab8e6';
+      ctx.beginPath();
+      ctx.arc(portal.x, portal.y, portal.size/2 * pulse, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#c0e6ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(portal.x, portal.y, portal.size/2, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.fillStyle = '#eaf6ff';
+      ctx.font = 'bold 20px "Courier New"';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⬇', portal.x, portal.y);
+      ctx.restore();
+    }
+
+    projectiles.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      const ang = Math.atan2(p.vy, p.vx);
+      ctx.rotate(ang);
+      ctx.fillStyle = p.fromPlayer ? '#a0e0ff' : (p.isBossSkill ? '#ff6a3a' : '#e0e0a0');
+      ctx.fillRect(-12, -2, 24, 4);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(10, -2, 6, 4);
+      ctx.restore();
+    });
+
+    const sortedEnemies = [...enemies].sort((a, b) => a.y - b.y);
+    sortedEnemies.forEach(e => {
+      const img = images[e.type];
+      const flip = player.x > e.x;
+      if (e.hitFlash > 0 && Math.floor(e.hitFlash / 50) % 2 === 0) {
+        ctx.save();
+        ctx.filter = 'brightness(2.5)';
+        drawSprite(img, e.x, e.y, e.size, flip, e.color, e.name[0]);
+        ctx.restore();
+      } else {
+        drawSprite(img, e.x, e.y, e.size, flip, e.color, e.name[0]);
+      }
+
+      if (e.poisonTimer > 0) {
+        ctx.fillStyle = '#6ade4a';
+        ctx.beginPath();
+        ctx.arc(e.x + e.size/2 - 4, e.y - e.size/2 + 4, 4, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      const barW = e.size * 0.9;
+      const barH = 5;
+      const barX = e.x - barW/2;
+      const barY = e.y - e.size/2 - 10;
+      ctx.fillStyle = '#2a1218';
+      ctx.fillRect(barX, barY, barW, barH);
+      ctx.fillStyle = e.type === 'boss' ? '#e6b800' : '#e65c5c';
+      ctx.fillRect(barX, barY, barW * Math.max(0, e.hp / e.maxHp), barH);
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, barY, barW, barH);
+
+      if (e.attackAnim > 0) {
+        ctx.save();
+        ctx.globalAlpha = e.attackAnim / 200;
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size/2 + 10 + (200 - e.attackAnim) * 0.2, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+
+    if (player.punchTimer > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#ffaa00';
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 110, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = '#ffcc00';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 110, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    const playerImg = images['player'];
+    const flipPlayer = player.facing === 2;
+    if (player.hitFlash > 0 && Math.floor(player.hitFlash / 50) % 2 === 0) {
+      ctx.save();
+      ctx.filter = 'brightness(3)';
+      drawSprite(playerImg, player.x, player.y, PLAYER_SIZE, flipPlayer, '#3e7a9e', '勇');
+      ctx.restore();
+    } else {
+      drawSprite(playerImg, player.x, player.y, PLAYER_SIZE, flipPlayer, '#3e7a9e', '勇');
+    }
+
+    if (player.shieldLayers > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = '#6ad0ff';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < Math.min(player.shieldLayers, 5); i++) {
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, PLAYER_SIZE/2 + 6 + i * 5, 0, Math.PI*2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    if (player.defending) {
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = '#7ad0ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, PLAYER_SIZE/2 + 6, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#7ad0ff';
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, PLAYER_SIZE/2 + 6, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (player.stunTimer > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#ffdd44';
+      ctx.font = 'bold 20px "Courier New"';
+      ctx.textAlign = 'center';
+      ctx.fillText('💫', player.x, player.y - PLAYER_SIZE);
+      ctx.restore();
+    }
+
+    if (player.attackAnim > 0) {
+      ctx.save();
+      ctx.globalAlpha = player.attackAnim / 150;
+      ctx.strokeStyle = '#fff0c0';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, ATTACK_RANGE * (1.2 - player.attackAnim / 300), 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    particles.forEach(p => {
+      if (p.type === 'slash') return;
+      if (p.type === 'punch') {
+        ctx.save();
+        ctx.globalAlpha = p.life / p.maxLife * 0.6;
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, p.radius * (1.2 - p.life / p.maxLife * 0.5), 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+        return;
+      }
+      if (p.type === 'dodge') {
+        ctx.save();
+        ctx.globalAlpha = p.life / p.maxLife;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px "Courier New"';
+        ctx.textAlign = 'center';
+        ctx.fillText('MISS', player.x, player.y - 30);
+        ctx.restore();
+        return;
+      }
+      ctx.globalAlpha = p.life / p.maxLife;
+      ctx.fillStyle = p.color || '#fff';
+      if (p.vx !== undefined) {
+        p.x += p.vx; p.y += p.vy;
+        p.vx *= 0.95; p.vy *= 0.95;
+      }
+      ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+      ctx.globalAlpha = 1;
+    });
+    particles = particles.filter(p => {
+      p.life -= 16;
+      return p.life > 0;
+    });
+
+    const pBarW = 44, pBarH = 6;
+    ctx.fillStyle = '#2a1218';
+    ctx.fillRect(player.x - pBarW/2, player.y - PLAYER_SIZE/2 - 14, pBarW, pBarH);
+    ctx.fillStyle = '#ff4d6d';
+    ctx.fillRect(player.x - pBarW/2, player.y - PLAYER_SIZE/2 - 14, pBarW * (player.hp / player.maxHp), pBarH);
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(player.x - pBarW/2, player.y - PLAYER_SIZE/2 - 14, pBarW, pBarH);
+
+    ctx.restore();
+
+    ctx.font = 'bold 20px "Courier New"';
+    ctx.fillStyle = '#b9c7e0';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`第 ${floor} 层`, 16, 12);
+
+    if (player.defending) {
+      ctx.font = 'bold 16px "Courier New"';
+      ctx.fillStyle = '#7ad0ff';
+      ctx.textAlign = 'center';
+      ctx.fillText('🛡 防御中', W/2, 16);
+    }
+    if (player.frozen && player.punchTimer > 0) {
+      ctx.font = 'bold 14px "Courier New"';
+      ctx.fillStyle = '#ffcc00';
+      ctx.textAlign = 'center';
+      ctx.fillText('👊 轰拳中(免伤90%)', W/2, 36);
+    }
+    if (player.stunTimer > 0) {
+      ctx.font = 'bold 16px "Courier New"';
+      ctx.fillStyle = '#ffdd44';
+      ctx.textAlign = 'center';
+      ctx.fillText('💫 眩晕中', W/2, 36);
+    }
+
+    drawMinimap();
+
+    if (messageTimer > 0) {
+      messageTimer -= 16;
+      ctx.font = 'bold 15px "Courier New"';
+      ctx.fillStyle = '#f0d9a0';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(message, W/2, 56);
+    }
+
+    if (gameOver) {
+      ctx.fillStyle = '#0a0c10cc';
+      ctx.fillRect(0, 0, W, H);
+      ctx.font = `bold ${W * 0.08}px "Courier New"`;
+      ctx.fillStyle = '#d9b382';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('💀 你死了 💀', W/2, H/2 - 20);
+      ctx.font = `${W * 0.045}px "Courier New"`;
+      ctx.fillStyle = '#b0b9cc';
+      ctx.fillText('点击「重开」继续挑战', W/2, H/2 + 50);
+    } else if (gameWin) {
+      ctx.fillStyle = '#0a0c10dd';
+      ctx.fillRect(0, 0, W, H);
+      ctx.font = `bold ${W * 0.07}px "Courier New"`;
+      ctx.fillStyle = '#ffd966';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🏆 通关！', W/2, H/2 - 40);
+      ctx.font = `${W * 0.045}px "Courier New"`;
+      ctx.fillStyle = '#f0e6c0';
+      ctx.fillText('你击败了大将军！', W/2, H/2 + 10);
+      ctx.fillText('点击「重开」再来一局', W/2, H/2 + 60);
+    }
+  }
+
+  function updateUI() {
+    hpBar.style.width = (player.hp / player.maxHp * 100) + '%';
+    hpText.textContent = `${player.hp}/${player.maxHp}`;
+    atkText.textContent = getTotalAtk();
+    floorText.textContent = floor;
+    killText.textContent = killCount;
+    enemyCountText.textContent = `${enemies.length}/${floorEnemyTotal}`;
+
+    if (player.shieldLayers > 0) {
+      shieldStat.style.display = '';
+      shieldText.textContent = player.shieldLayers;
+    } else {
+      shieldStat.style.display = 'none';
+    }
+
+    if (player.equipAtk) {
+      slotAtk.textContent = `攻击: ${player.equipAtk.name}`;
+      slotAtk.classList.add('filled');
+    } else {
+      slotAtk.textContent = '攻击: 空';
+      slotAtk.classList.remove('filled');
+    }
+    const defNames = ['防御1', '防御2'];
+    [slotDef1, slotDef2].forEach((el, i) => {
+      if (player.equipDef[i]) {
+        el.textContent = `${defNames[i]}: ${player.equipDef[i].name}`;
+        el.classList.add('filled');
+      } else {
+        el.textContent = `${defNames[i]}: 空`;
+        el.classList.remove('filled');
+      }
+    });
+
+    if (player.skill) {
+      const skillNames = { punch: '👊 轰拳', bloodslash: '🩸 血斩', shieldfist: '🥊 护盾拳' };
+      const cdSec = (player.skillCdTimer / 1000).toFixed(1);
+      if (player.skillCdTimer > 0) {
+        skillInfo.textContent = `${skillNames[player.skill]} (CD ${cdSec}s)`;
+        skillBtn.classList.add('cooling');
+      } else {
+        skillInfo.textContent = `${skillNames[player.skill]} 就绪`;
+        skillBtn.classList.remove('cooling');
+      }
+    } else {
+      skillInfo.textContent = '技能: 未选择';
+    }
+  }
+
+  function resetGame() {
+    player = {
+      x: WORLD_SIZE/2, y: WORLD_SIZE/2,
+      hp: BASE_HP, maxHp: BASE_HP, baseAtk: BASE_ATK,
+      facing: 0, defending: false, defendTimer: 0,
+      attackTimer: 0, hitFlash: 0, attackAnim: 0,
+      equipAtk: null, equipDef: [null, null],
+      skill: null, skillCdTimer: 0,
+      punchTimer: 0, punchTickTimer: 0, frozen: false,
+      shieldLayers: 0, stunTimer: 0,
+    };
+    killCount = 0;
+    gameOver = false;
+    gameWin = false;
+    floor = 1;
+    message = '';
+    messageTimer = 0;
+    swapping = false;
+    pendingEquip = null;
+    swapOverlay.classList.remove('show');
+    generateFloor(1);
+    choosingSkill = true;
+    skillSelectOverlay.classList.add('show');
+    updateUI();
+  }
+
+  document.querySelectorAll('.skill-card').forEach(card => {
+    const selectSkill = (e) => {
+      e.preventDefault();
+      const skill = card.dataset.skill;
+      player.skill = skill;
+      choosingSkill = false;
+      skillSelectOverlay.classList.remove('show');
+      const skillNames = { punch: '👊 轰拳', bloodslash: '🩸 血斩', shieldfist: '🥊 护盾拳' };
+      message = `选择了技能：${skillNames[skill]}`;
+      messageTimer = 2000;
+      updateUI();
+    };
+    card.addEventListener('click', selectSkill);
+    card.addEventListener('touchstart', selectSkill, { passive: false });
+  });
+
+  swapYes.addEventListener('click', (e) => { e.preventDefault(); confirmSwap(); });
+  swapYes.addEventListener('touchstart', (e) => { e.preventDefault(); confirmSwap(); }, { passive: false });
+  swapNo.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (pendingEquip) {
+      message = `丢弃了 ${pendingEquip.item.name}`;
+      messageTimer = 2000;
+    }
+    closeSwapDialog();
+    updateUI();
+  });
+  swapNo.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (pendingEquip) {
+      message = `丢弃了 ${pendingEquip.item.name}`;
+      messageTimer = 2000;
+    }
+    closeSwapDialog();
+    updateUI();
+  }, { passive: false });
+
+  document.querySelectorAll('.dpad-btn[data-dir]').forEach(btn => {
+    const dir = btn.dataset.dir;
+    const start = (e) => {
+      e.preventDefault();
+      if (dir === 'up') keys.up = true;
+      else if (dir === 'down') keys.down = true;
+      else if (dir === 'left') keys.left = true;
+      else if (dir === 'right') keys.right = true;
+    };
+    const end = (e) => {
+      e.preventDefault();
+      if (dir === 'up') keys.up = false;
+      else if (dir === 'down') keys.down = false;
+      else if (dir === 'left') keys.left = false;
+      else if (dir === 'right') keys.right = false;
+    };
+    btn.addEventListener('touchstart', start, { passive: false });
+    btn.addEventListener('touchend', end, { passive: false });
+    btn.addEventListener('touchcancel', end, { passive: false });
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('mouseup', end);
+    btn.addEventListener('mouseleave', end);
+  });
+
+  const attackBtn = document.getElementById('attackBtn');
+  attackBtn.addEventListener('touchstart', (e) => { e.preventDefault(); doAttack(); }, { passive: false });
+  attackBtn.addEventListener('mousedown', (e) => { e.preventDefault(); doAttack(); });
+
+  const startDefend = (e) => { e.preventDefault(); player.defendTimer = DEFEND_DURATION; };
+  const endDefend = (e) => { e.preventDefault(); };
+  defendBtn.addEventListener('touchstart', startDefend, { passive: false });
+  defendBtn.addEventListener('touchend', endDefend, { passive: false });
+  defendBtn.addEventListener('mousedown', startDefend);
+  defendBtn.addEventListener('mouseup', endDefend);
+  defendBtn.addEventListener('mouseleave', endDefend);
+
+  skillBtn.addEventListener('click', useSkill);
+  skillBtn.addEventListener('touchstart', (e) => { e.preventDefault(); useSkill(); }, { passive: false });
+
+  document.getElementById('resetBtn').addEventListener('click', resetGame);
+  document.getElementById('resetBtn').addEventListener('touchstart', (e) => { e.preventDefault(); resetGame(); }, { passive: false });
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D',' '].includes(k)) e.preventDefault();
+    if (k === 'ArrowUp' || k === 'w' || k === 'W') keys.up = true;
+    if (k === 'ArrowDown' || k === 's' || k === 'S') keys.down = true;
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = true;
+    if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = true;
+    if (k === ' ') doAttack();
+    if (k === 'j' || k === 'J' || k === 'Shift') player.defendTimer = DEFEND_DURATION;
+    if (k === 'q' || k === 'Q') useSkill();
+  });
+  window.addEventListener('keyup', (e) => {
+    const k = e.key;
+    if (k === 'ArrowUp' || k === 'w' || k === 'W') keys.up = false;
+    if (k === 'ArrowDown' || k === 's' || k === 'S') keys.down = false;
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.left = false;
+    if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.right = false;
+  });
+
+  canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+
+  let lastTime = performance.now();
+  function gameLoop(now) {
+    const dt = Math.min(now - lastTime, 50);
+    lastTime = now;
+    if (!gameOver && !gameWin && !choosingSkill && !swapping) {
+      updatePlayer(dt);
+      updateEnemies(dt);
+      updateProjectiles(dt);
+      updateCamera(false);
+    }
+    if (player.skill) updateUI();
+    render();
+    requestAnimationFrame(gameLoop);
+  }
+
+  resetGame();
+  requestAnimationFrame(gameLoop);
+})();
+</script>
+</body>
+</html>
