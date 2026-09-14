@@ -102,7 +102,7 @@
     box-shadow: 0 3px 0 #0d1017; border: 1px solid #7a6b9e;
   }
   .reset-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #0d1017; }
-    .skill-select-overlay {
+   .skill-select-overlay {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background: #0a0c10ee; border-radius: 22px;
     display: none; justify-content: center; align-items: center;
@@ -257,7 +257,8 @@
       </div>
     </div>
   </div>
-</di<script>
+</div>
+<script>
 (function(){
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
@@ -407,9 +408,8 @@
   function isSameEquip(a, b) {
     if (!a || !b) return false;
     return a.name === b.name;
-  }v>
-    
-function generateFloor(floorNum) {
+  }
+ function generateFloor(floorNum) {
   enemies = []; chests = []; projectiles = []; particles = []; portal = null;
   player.x = WORLD_SIZE/2; player.y = WORLD_SIZE/2;
 
@@ -683,8 +683,8 @@ function punchTick() {
     life: 300, maxLife: 300, type: 'punch', radius: 110,
   });
   updateUI();
-        }
-  function updateEnemies(dt) {
+ }
+ function updateEnemies(dt) {
   enemies.forEach(e => {
     e.atkTimer -= dt;
     if (e.hitFlash > 0) e.hitFlash -= dt;
@@ -974,8 +974,8 @@ function confirmSwap() {
   messageTimer = 2500;
   closeSwapDialog();
   updateUI();
- }
-  function updatePlayer(dt) {
+       }
+ function updatePlayer(dt) {
   if (gameOver || gameWin || choosingSkill || swapping) return;
 
   if (player.skillCdTimer > 0) player.skillCdTimer = Math.max(0, player.skillCdTimer - dt);
@@ -1161,8 +1161,8 @@ function drawMinimap() {
   ctx.fillText('●箱', mx + 4, my + MINIMAP_SIZE + 42);
 
   ctx.restore();
-}
-    function render() {
+                  }
+   function render() {
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = '#0f1219';
     ctx.fillRect(0, 0, W, H);
