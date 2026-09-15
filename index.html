@@ -542,328 +542,326 @@
       } catch(e) {}
     }
   }
+ // ============ 首页 BGM ============
+let bgmAudio = null;
+let bgmLoaded = false;
+let bgmPlaying = false;
 
-  // ============ 首页 BGM ============
-  let bgmAudio = null;
-  let bgmLoaded = false;
-  let bgmPlaying = false;
+function initBgm() {
+  if (bgmLoaded) return;
+  try {
+    bgmAudio = new Audio('bgm.mp3');
+    bgmAudio.loop = true;
+    bgmAudio.volume = 0.4;
+    bgmLoaded = true;
+  } catch(e) { console.warn('BGM 加载失败', e); }
+}
 
-  function initBgm() {
-    if (bgmLoaded) return;
-    try {
-      bgmAudio = new Audio('bgm.mp3');
-      bgmAudio.loop = true;
-      bgmAudio.volume = 0.4;
-      bgmLoaded = true;
-    } catch(e) { console.warn('BGM 加载失败', e); }
-  }
+function playBgm() {
+  if (!bgmLoaded) initBgm();
+  if (!bgmAudio) return;
+  if (bgmPlaying) return;
+  bgmAudio.play().then(() => { bgmPlaying = true; }).catch(e => {});
+}
 
-  function playBgm() {
-    if (!bgmLoaded) initBgm();
-    if (!bgmAudio) return;
-    if (bgmPlaying) return;
-    bgmAudio.play().then(() => { bgmPlaying = true; }).catch(e => {});
-  }
+function pauseBgm() {
+  if (!bgmAudio) return;
+  try { bgmAudio.pause(); bgmPlaying = false; } catch(e) {}
+}
 
-  function pauseBgm() {
-    if (!bgmAudio) return;
-    try { bgmAudio.pause(); bgmPlaying = false; } catch(e) {}
-  }
+function resumeBgm() {
+  if (!bgmAudio) return;
+  if (bgmPlaying) return;
+  bgmAudio.play().then(() => { bgmPlaying = true; }).catch(e => {});
+}
 
-  function resumeBgm() {
-    if (!bgmAudio) return;
-    if (bgmPlaying) return;
-    bgmAudio.play().then(() => { bgmPlaying = true; }).catch(e => {});
-  }
+function stopBgm() {
+  if (!bgmAudio) return;
+  try { bgmAudio.pause(); bgmAudio.currentTime = 0; bgmPlaying = false; } catch(e) {}
+}
 
-  function stopBgm() {
-    if (!bgmAudio) return;
-    try { bgmAudio.pause(); bgmAudio.currentTime = 0; bgmPlaying = false; } catch(e) {}
-  }
+// ============ 存档 ============
+const SAVE_KEY = 'rogue_dungeon_save_v2';
 
-  // ============ 存档 ============
-  const SAVE_KEY = 'rogue_dungeon_save_v2';
+function hasSaveData() {
+  try { return !!localStorage.getItem(SAVE_KEY); } catch(e) { return false; }
+}
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  updateContinueButton();
+}
+function updateContinueButton() {
+  const btn = document.getElementById('continueBtn');
+  if (!btn) return;
+  btn.disabled = !hasSaveData();
+  btn.textContent = '继续游戏';
+}
 
-  function hasSaveData() {
-    try { return !!localStorage.getItem(SAVE_KEY); } catch(e) { return false; }
-  }
-  function clearSave() {
-    try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
-    updateContinueButton();
-  }
-  function updateContinueButton() {
-    const btn = document.getElementById('continueBtn');
-    if (!btn) return;
-    btn.disabled = !hasSaveData();
-    btn.textContent = '继续游戏';
-  }
+let saveToastTimeout = null;
+function showSaveToast() {
+  const toast = document.getElementById('saveToast');
+  if (!toast) return;
+  toast.classList.add('show');
+  if (saveToastTimeout) clearTimeout(saveToastTimeout);
+  saveToastTimeout = setTimeout(() => toast.classList.remove('show'), 1000);
+}
 
-  let saveToastTimeout = null;
-  function showSaveToast() {
-    const toast = document.getElementById('saveToast');
-    if (!toast) return;
-    toast.classList.add('show');
-    if (saveToastTimeout) clearTimeout(saveToastTimeout);
-    saveToastTimeout = setTimeout(() => toast.classList.remove('show'), 1000);
-  }
-
-  function saveGame() {
-    if (gameOver || gameWin || choosingSkill) return;
-    try {
-      const data = {
-        version: 2,
-        player: {
-          x: player.x, y: player.y,
-          hp: player.hp, maxHp: player.maxHp, baseAtk: player.baseAtk,
-          equipAtk: player.equipAtk,
-          equipDef: player.equipDef,
-          skill: player.skill,
-          shieldLayers: player.shieldLayers,
-        },
-        floor: floor,
-        killCount: killCount,
-        enemies: enemies.map(e => ({
-          type: e.type, x: e.x, y: e.y, hp: e.hp, maxHp: e.maxHp,
-          atk: e.atk, speed: e.speed, size: e.size,
-          color: e.color, name: e.name, range: e.range,
-          atkCooldown: e.atkCooldown, atkTimer: e.atkTimer,
-          detectRange: e.detectRange,
-          state: e.state, ranged: e.ranged,
-          wanderAngle: e.wanderAngle, wanderTimer: e.wanderTimer,
-          regenTimer: e.regenTimer || 0,
-          enraged: e.enraged || false,
-        })),
-        chests: chests.map(c => ({ x: c.x, y: c.y, opened: c.opened, size: c.size, chestType: c.chestType })),
-        healOrbs: healOrbs.map(o => ({ x: o.x, y: o.y, size: o.size, collected: o.collected })),
-        lastOrbFloor: lastOrbFloor,
-        portal: portal ? { x: portal.x, y: portal.y, size: portal.size } : null,
-      };
-      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-      updateContinueButton();
-      showSaveToast();
-    } catch(e) { console.warn('存档失败', e); }
-  }
-
-  let saveThrottleTimer = null;
-  function scheduleSave() {
-    if (saveThrottleTimer) return;
-    saveThrottleTimer = setTimeout(() => {
-      saveThrottleTimer = null;
-      saveGame();
-    }, 500);
-  }
-
-  function loadGame() {
-    try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (!raw) return false;
-      const data = JSON.parse(raw);
-      if (!data || (data.version !== 2 && data.version !== 1)) return false;
-
-      player = {
-        x: data.player.x, y: data.player.y,
-        hp: data.player.hp, maxHp: data.player.maxHp, baseAtk: data.player.baseAtk,
-        facing: 0, defending: false, defendTimer: 0,
-        attackTimer: 0, hitFlash: 0, attackAnim: 0,
-        equipAtk: data.player.equipAtk || null,
-        equipDef: data.player.equipDef || [null, null],
-        skill: data.player.skill || null,
-        skillCdTimer: 0,
-        punchTimer: 0, punchTickTimer: 0, frozen: false,
-        shieldLayers: data.player.shieldLayers || 0,
-        stunTimer: 0,
-        timeStopImmune: 0,
-      };
-      floor = data.floor || 1;
-      killCount = data.killCount || 0;
-      gameOver = false;
-      gameWin = false;
-      floatTexts = [];
-
-      generateFloor(floor);
-
-      enemies = (data.enemies || []).map(e => ({
+function saveGame() {
+  if (gameOver || gameWin || choosingSkill) return;
+  try {
+    const data = {
+      version: 2,
+      player: {
+        x: player.x, y: player.y,
+        hp: player.hp, maxHp: player.maxHp, baseAtk: player.baseAtk,
+        equipAtk: player.equipAtk,
+        equipDef: player.equipDef,
+        skill: player.skill,
+        shieldLayers: player.shieldLayers,
+      },
+      floor: floor,
+      killCount: killCount,
+      enemies: enemies.map(e => ({
         type: e.type, x: e.x, y: e.y, hp: e.hp, maxHp: e.maxHp,
         atk: e.atk, speed: e.speed, size: e.size,
         color: e.color, name: e.name, range: e.range,
         atkCooldown: e.atkCooldown, atkTimer: e.atkTimer,
-        detectRange: e.detectRange || 300,
-        hitFlash: 0, state: e.state || 'idle', ranged: e.ranged || false,
-        wanderAngle: e.wanderAngle || 0, wanderTimer: e.wanderTimer || 0,
-        attackAnim: 0, poisonTimer: 0, poisonDps: 0, stunTimer: 0,
-        skillTimer1: 0, skillTimer2: 0, skillTimer3: 0, skillTimer4: 0,
-        chargeTimer: 0, charging: false, chargeAngle: 0, warnTimer: 0,
-        regenTimer: e.regenTimer || 0, enraged: e.enraged || false,
-        phase: e.phase || 1, timeStopActive: false,
-        skillState: 'idle', skillIndex: 0, skillCounter: 0,
-        timeStopCD: 0, roadRollerActive: false, roadRollerAngle: 0,
-      }));
-      floorEnemyTotal = enemies.length;
+        detectRange: e.detectRange,
+        state: e.state, ranged: e.ranged,
+        wanderAngle: e.wanderAngle, wanderTimer: e.wanderTimer,
+        regenTimer: e.regenTimer || 0,
+        enraged: e.enraged || false,
+      })),
+      chests: chests.map(c => ({ x: c.x, y: c.y, opened: c.opened, size: c.size, chestType: c.chestType })),
+      healOrbs: healOrbs.map(o => ({ x: o.x, y: o.y, size: o.size, collected: o.collected })),
+      lastOrbFloor: lastOrbFloor,
+      portal: portal ? { x: portal.x, y: portal.y, size: portal.size } : null,
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    updateContinueButton();
+    showSaveToast();
+  } catch(e) { console.warn('存档失败', e); }
+}
 
-      chests = (data.chests || []).map(c => ({
-        x: c.x, y: c.y, opened: c.opened, size: c.size || 28, chestType: c.chestType,
-      }));
+let saveThrottleTimer = null;
+function scheduleSave() {
+  if (saveThrottleTimer) return;
+  saveThrottleTimer = setTimeout(() => {
+    saveThrottleTimer = null;
+    saveGame();
+  }, 500);
+}
 
-      healOrbs = (data.healOrbs || []).map(o => ({
-        x: o.x, y: o.y, size: o.size || HEAL_ORB_SIZE, collected: o.collected, pulse: Math.random() * Math.PI * 2,
-      }));
-      lastOrbFloor = data.lastOrbFloor || 0;
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data || (data.version !== 2 && data.version !== 1)) return false;
 
-      portal = data.portal ? { x: data.portal.x, y: data.portal.y, size: data.portal.size || 36, timer: 0 } : null;
+    player = {
+      x: data.player.x, y: data.player.y,
+      hp: data.player.hp, maxHp: data.player.maxHp, baseAtk: data.player.baseAtk,
+      facing: 0, defending: false, defendTimer: 0,
+      attackTimer: 0, hitFlash: 0, attackAnim: 0,
+      equipAtk: data.player.equipAtk || null,
+      equipDef: data.player.equipDef || [null, null],
+      skill: data.player.skill || null,
+      skillCdTimer: 0,
+      punchTimer: 0, punchTickTimer: 0, frozen: false,
+      shieldLayers: data.player.shieldLayers || 0,
+      stunTimer: 0,
+      timeStopImmune: 0,
+    };
+    floor = data.floor || 1;
+    killCount = data.killCount || 0;
+    gameOver = false;
+    gameWin = false;
+    floatTexts = [];
 
-      updateCamera(true);
-      updateUI();
-      return true;
-    } catch(e) {
-      console.warn('读档失败', e);
-      return false;
-    }
+    generateFloor(floor);
+
+    enemies = (data.enemies || []).map(e => ({
+      type: e.type, x: e.x, y: e.y, hp: e.hp, maxHp: e.maxHp,
+      atk: e.atk, speed: e.speed, size: e.size,
+      color: e.color, name: e.name, range: e.range,
+      atkCooldown: e.atkCooldown, atkTimer: e.atkTimer,
+      detectRange: e.detectRange || 300,
+      hitFlash: 0, state: e.state || 'idle', ranged: e.ranged || false,
+      wanderAngle: e.wanderAngle || 0, wanderTimer: e.wanderTimer || 0,
+      attackAnim: 0, poisonTimer: 0, poisonDps: 0, stunTimer: 0,
+      skillTimer1: 0, skillTimer2: 0, skillTimer3: 0, skillTimer4: 0,
+      chargeTimer: 0, charging: false, chargeAngle: 0, warnTimer: 0,
+      regenTimer: e.regenTimer || 0, enraged: e.enraged || false,
+      phase: e.phase || 1, timeStopActive: false,
+      skillState: 'idle', skillIndex: 0, skillCounter: 0,
+      timeStopCD: 0, roadRollerActive: false, roadRollerAngle: 0,
+    }));
+    floorEnemyTotal = enemies.length;
+
+    chests = (data.chests || []).map(c => ({
+      x: c.x, y: c.y, opened: c.opened, size: c.size || 28, chestType: c.chestType,
+    }));
+
+    healOrbs = (data.healOrbs || []).map(o => ({
+      x: o.x, y: o.y, size: o.size || HEAL_ORB_SIZE, collected: o.collected, pulse: Math.random() * Math.PI * 2,
+    }));
+    lastOrbFloor = data.lastOrbFloor || 0;
+
+    portal = data.portal ? { x: data.portal.x, y: data.portal.y, size: data.portal.size || 36, timer: 0 } : null;
+
+    updateCamera(true);
+    updateUI();
+    return true;
+  } catch(e) {
+    console.warn('读档失败', e);
+    return false;
   }
+ }
+ // ============ 常量 ============
+const WORLD_SIZE = 1800;
+const VIEW_SIZE = 480;
+const PLAYER_SIZE = 34;
+const BASE_SPEED = 2.4;
+const BASE_HP = 10;
+const BASE_ATK = 1;
+const ATTACK_RANGE = 52;
+const ATTACK_COOLDOWN = 400;
+const DEFEND_DURATION = 400;
+const SKILL_CD = 10000;
+const MINIMAP_SIZE = 110;
+const MAX_FLOOR = 20;
 
-  // ============ 常量 ============
-  const WORLD_SIZE = 1800;
-  const VIEW_SIZE = 480;
-  const PLAYER_SIZE = 34;
-  const BASE_SPEED = 2.4;
-  const BASE_HP = 10;
-  const BASE_ATK = 1;
-  const ATTACK_RANGE = 52;
-  const ATTACK_COOLDOWN = 400;
-  const DEFEND_DURATION = 400;
-  const SKILL_CD = 10000;
-  const MINIMAP_SIZE = 110;
-  const MAX_FLOOR = 20;
+const ENEMY_TYPES = {
+  grunt:    { hp: 10, atk: 2, speed: 1.1, size: 30, color: '#6a9d4a', name: '小兵',   range: 40, atkCooldown: 900, detect: 340 },
+  archer:   { hp: 15, atk: 5, speed: 0.9, size: 28, color: '#5b8c5a', name: '弓手',   range: 240, atkCooldown: 1600, ranged: true, detect: 420 },
+  boar:     { hp: 20, atk: 6, speed: 1.7, size: 40, color: '#7a5230', name: '野猪骑士', range: 44, atkCooldown: 1100, detect: 380 },
+  boss:     { hp: 35, atk: 5, speed: 0.95, size: 56, color: '#c9a227', name: '大将军', range: 60, atkCooldown: 1000, detect: 500 },
+  ninja:    { hp: 25, atk: 5, speed: 1.4, size: 32, color: '#2a3a4a', name: '忍者',   range: 200, atkCooldown: 1400, detect: 400, hybrid: true },
+  crossbow: { hp: 30, atk: 8, speed: 0.7, size: 36, color: '#5a4a30', name: '弩车',   range: 320, atkCooldown: 2000, ranged: true, detect: 460, multiShot: 3, onDeathExplode: 10 },
+  dualgun:  { hp: 20, atk: 15, speed: 1.2, size: 30, color: '#8a3a4a', name: '双枪兵', range: 50, atkCooldown: 1600, detect: 380, twoPhase: true },
+  ghost:    { hp: 20, atk: 9, speed: 1.0, size: 30, color: '#a0c0e0', name: '鬼',     range: 40, atkCooldown: 1200, detect: 400, regen: 5 },
+  flesh:    { hp: 25, atk: 5, speed: 1.9, size: 30, color: '#6a4a3a', name: '尸生人', range: 40, atkCooldown: 1000, detect: 420, regen: 3 },
+  mucan:    { hp: 45, atk: 4, speed: 0.8, size: 50, color: '#8a1a2a', name: '无惨',   range: 60, atkCooldown: 1200, detect: 520, regen: 5, isMiniboss: true },
+  dio:      { hp: 60, atk: 5, speed: 1.0, size: 60, color: '#e0c040', name: 'DIO',   range: 65, atkCooldown: 1100, detect: 600, isBoss: true },
+};
 
-  const ENEMY_TYPES = {
-    grunt:    { hp: 10, atk: 2, speed: 1.1, size: 30, color: '#6a9d4a', name: '小兵',   range: 40, atkCooldown: 900, detect: 340 },
-    archer:   { hp: 15, atk: 5, speed: 0.9, size: 28, color: '#5b8c5a', name: '弓手',   range: 240, atkCooldown: 1600, ranged: true, detect: 420 },
-    boar:     { hp: 20, atk: 6, speed: 1.7, size: 40, color: '#7a5230', name: '野猪骑士', range: 44, atkCooldown: 1100, detect: 380 },
-    boss:     { hp: 35, atk: 5, speed: 0.95, size: 56, color: '#c9a227', name: '大将军', range: 60, atkCooldown: 1000, detect: 500 },
-    ninja:    { hp: 25, atk: 5, speed: 1.4, size: 32, color: '#2a3a4a', name: '忍者',   range: 200, atkCooldown: 1400, detect: 400, hybrid: true },
-    crossbow: { hp: 30, atk: 8, speed: 0.7, size: 36, color: '#5a4a30', name: '弩车',   range: 320, atkCooldown: 2000, ranged: true, detect: 460, multiShot: 3, onDeathExplode: 10 },
-    dualgun:  { hp: 20, atk: 15, speed: 1.2, size: 30, color: '#8a3a4a', name: '双枪兵', range: 50, atkCooldown: 1600, detect: 380, twoPhase: true },
-    ghost:    { hp: 20, atk: 9, speed: 1.0, size: 30, color: '#a0c0e0', name: '鬼',     range: 40, atkCooldown: 1200, detect: 400, regen: 5 },
-    flesh:    { hp: 25, atk: 5, speed: 1.9, size: 30, color: '#6a4a3a', name: '尸生人', range: 40, atkCooldown: 1000, detect: 420, regen: 3 },
-    mucan:    { hp: 45, atk: 4, speed: 0.8, size: 50, color: '#8a1a2a', name: '无惨',   range: 60, atkCooldown: 1200, detect: 520, regen: 5, isMiniboss: true },
-    dio:      { hp: 60, atk: 5, speed: 1.0, size: 60, color: '#e0c040', name: 'DIO',   range: 65, atkCooldown: 1100, detect: 600, isBoss: true },
-  };
+const ATK_EQUIPS = [
+  { name: '木剑', atk: 2, desc: '+2 攻击' },
+  { name: '铁剑', atk: 5, desc: '+5 攻击' },
+  { name: '血剑', atk: 4, desc: '+4 攻击, 命中回血2', lifesteal: 2 },
+  { name: '铁棍', atk: 2, desc: '+2 攻击, 50%暴击再+3', crit: 0.5, critBonus: 3 },
+  { name: '大刀', atk: 3, desc: '+3 攻击' },
+  { name: '弓箭', atk: 4, desc: '+4 攻击, 远程攻击', ranged: true, range: 260 },
+  { name: '毒弓', atk: 2, desc: '+2 攻击, 远程, 中毒每秒-2血(3秒)', ranged: true, range: 260, poison: true, poisonDps: 2, poisonDuration: 3000 },
+];
 
-  const ATK_EQUIPS = [
-    { name: '木剑', atk: 2, desc: '+2 攻击' },
-    { name: '铁剑', atk: 5, desc: '+5 攻击' },
-    { name: '血剑', atk: 4, desc: '+4 攻击, 命中回血2', lifesteal: 2 },
-    { name: '铁棍', atk: 2, desc: '+2 攻击, 50%暴击再+3', crit: 0.5, critBonus: 3 },
-    { name: '大刀', atk: 3, desc: '+3 攻击' },
-    { name: '弓箭', atk: 4, desc: '+4 攻击, 远程攻击', ranged: true, range: 260 },
-    { name: '毒弓', atk: 2, desc: '+2 攻击, 远程, 中毒每秒-2血(3秒)', ranged: true, range: 260, poison: true, poisonDps: 2, poisonDuration: 3000 },
-  ];
+const DEF_EQUIPS = [
+  { name: '废物帽', hp: 1, desc: '+1 血' },
+  { name: '大胸甲', hp: 5, desc: '+5 血' },
+  { name: '高手帽', hp: 4, desc: '+4 血' },
+  { name: '铁盾', hp: 3, desc: '+3血, 远程免伤50%', rangedResist: 0.5 },
+  { name: '闪避鞋', hp: 0, desc: '20%闪避所有伤害', dodge: 0.2 },
+  { name: '小皮鞋', hp: 0, desc: '移动速度增加40%', speedBoost: 1.4 },
+  { name: '战斗旗', hp: 0, desc: '每层+当前层数×3血量', battleFlag: true },
+];
 
-  const DEF_EQUIPS = [
-    { name: '废物帽', hp: 1, desc: '+1 血' },
-    { name: '大胸甲', hp: 5, desc: '+5 血' },
-    { name: '高手帽', hp: 4, desc: '+4 血' },
-    { name: '铁盾', hp: 3, desc: '+3血, 远程免伤50%', rangedResist: 0.5 },
-    { name: '闪避鞋', hp: 0, desc: '20%闪避所有伤害', dodge: 0.2 },
-    { name: '小皮鞋', hp: 0, desc: '移动速度增加40%', speedBoost: 1.4 },
-    { name: '战斗旗', hp: 0, desc: '每层+当前层数×3血量', battleFlag: true },
-  ];
+const HEAL_ORB_AMOUNT = 10;
+const HEAL_ORB_SIZE = 26;
 
-  const HEAL_ORB_AMOUNT = 10;
-  const HEAL_ORB_SIZE = 26;
+let player = {
+  x: WORLD_SIZE/2, y: WORLD_SIZE/2,
+  hp: BASE_HP, maxHp: BASE_HP, baseAtk: BASE_ATK,
+  facing: 0, defending: false, defendTimer: 0,
+  attackTimer: 0, hitFlash: 0, attackAnim: 0,
+  equipAtk: null, equipDef: [null, null],
+  skill: null, skillCdTimer: 0,
+  punchTimer: 0, punchTickTimer: 0, frozen: false,
+  shieldLayers: 0, stunTimer: 0,
+  timeStopImmune: 0,
+};
 
-  let player = {
-    x: WORLD_SIZE/2, y: WORLD_SIZE/2,
-    hp: BASE_HP, maxHp: BASE_HP, baseAtk: BASE_ATK,
-    facing: 0, defending: false, defendTimer: 0,
-    attackTimer: 0, hitFlash: 0, attackAnim: 0,
-    equipAtk: null, equipDef: [null, null],
-    skill: null, skillCdTimer: 0,
-    punchTimer: 0, punchTickTimer: 0, frozen: false,
-    shieldLayers: 0, stunTimer: 0,
-    timeStopImmune: 0,
-  };
+let enemies = [], chests = [], projectiles = [], particles = [];
+let floatTexts = [];
+let healOrbs = [];
+let lastOrbFloor = 0;
+let portal = null;
+let floor = 1, killCount = 0;
+let floorEnemyTotal = 0;
+let gameOver = false, gameWin = false;
+let message = '', messageTimer = 0;
+let choosingSkill = false;
+let swapping = false;
+let pendingEquip = null;
 
-  let enemies = [], chests = [], projectiles = [], particles = [];
-  let floatTexts = [];
-  let healOrbs = [];
-  let lastOrbFloor = 0;
-  let portal = null;
-  let floor = 1, killCount = 0;
-  let floorEnemyTotal = 0;
-  let gameOver = false, gameWin = false;
-  let message = '', messageTimer = 0;
-  let choosingSkill = false;
-  let swapping = false;
-  let pendingEquip = null;
+let camera = { x: 0, y: 0 };
+let keys = { up:false, down:false, left:false, right:false };
 
-  let camera = { x: 0, y: 0 };
-  let keys = { up:false, down:false, left:false, right:false };
+let shakeTime = 0, shakeMag = 0;
+function shake(mag, time) {
+  shakeMag = Math.max(shakeMag, mag);
+  shakeTime = Math.max(shakeTime, time);
+}
 
-  let shakeTime = 0, shakeMag = 0;
-  function shake(mag, time) {
-    shakeMag = Math.max(shakeMag, mag);
-    shakeTime = Math.max(shakeTime, time);
-  }
+let timeStopTimer = 0;
+let timeStopOwner = null;
 
-  let timeStopTimer = 0;
-  let timeStopOwner = null;
+function rand(min, max) { return Math.random() * (max - min) + min; }
+function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-  function rand(min, max) { return Math.random() * (max - min) + min; }
-  function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
-  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function spawnFloatText(x, y, value, color, isCrit) {
+  floatTexts.push({
+    x, y, vx: rand(-1.2, 1.2), vy: -1.8,
+    life: 900, maxLife: 900,
+    value: value, color: color || '#fff',
+    isCrit: !!isCrit,
+    scale: isCrit ? 1.4 : 1.0,
+  });
+}
 
-  function spawnFloatText(x, y, value, color, isCrit) {
-    floatTexts.push({
-      x, y, vx: rand(-1.2, 1.2), vy: -1.8,
-      life: 900, maxLife: 900,
-      value: value, color: color || '#fff',
-      isCrit: !!isCrit,
-      scale: isCrit ? 1.4 : 1.0,
-    });
-  }
+function getTotalAtk() {
+  let atk = player.baseAtk;
+  if (player.equipAtk) atk += player.equipAtk.atk;
+  return atk;
+}
 
-  function getTotalAtk() {
-    let atk = player.baseAtk;
-    if (player.equipAtk) atk += player.equipAtk.atk;
-    return atk;
-  }
+function getTotalMaxHp() {
+  let hp = BASE_HP;
+  player.equipDef.forEach(e => {
+    if (!e) return;
+    if (e.battleFlag) hp += floor * 3;
+    else hp += e.hp || 0;
+  });
+  return hp;
+}
 
-  function getTotalMaxHp() {
-    let hp = BASE_HP;
-    player.equipDef.forEach(e => {
-      if (!e) return;
-      if (e.battleFlag) hp += floor * 3;
-      else hp += e.hp || 0;
-    });
-    return hp;
-  }
+function getPlayerSpeed() {
+  let spd = BASE_SPEED;
+  player.equipDef.forEach(e => {
+    if (e && e.speedBoost) spd *= e.speedBoost;
+  });
+  return spd;
+}
 
-  function getPlayerSpeed() {
-    let spd = BASE_SPEED;
-    player.equipDef.forEach(e => {
-      if (e && e.speedBoost) spd *= e.speedBoost;
-    });
-    return spd;
-  }
+function hasDefEquip(predicate) {
+  return player.equipDef.some(e => e && predicate(e));
+}
 
-  function hasDefEquip(predicate) {
-    return player.equipDef.some(e => e && predicate(e));
-  }
+function recalcMaxHp() {
+  const newMax = getTotalMaxHp();
+  const diff = newMax - player.maxHp;
+  player.maxHp = newMax;
+  if (diff > 0) player.hp = Math.min(player.hp + diff, player.maxHp);
+  else player.hp = Math.min(player.hp, player.maxHp);
+}
 
-  function recalcMaxHp() {
-    const newMax = getTotalMaxHp();
-    const diff = newMax - player.maxHp;
-    player.maxHp = newMax;
-    if (diff > 0) player.hp = Math.min(player.hp + diff, player.maxHp);
-    else player.hp = Math.min(player.hp, player.maxHp);
-  }
-
-  function isSameEquip(a, b) {
-    if (!a || !b) return false;
-    return a.name === b.name;
-  }
-function getFloorConfig(floorNum) {
+function isSameEquip(a, b) {
+  if (!a || !b) return false;
+  return a.name === b.name;
+ }
+ function getFloorConfig(floorNum) {
   if (floorNum <= 3) return { list: ['grunt','grunt','grunt','grunt','grunt'], minDist: 120, maxDist: 320 };
   if (floorNum <= 6) return { list: ['grunt','grunt','grunt','archer','archer','grunt','archer'], minDist: 200, maxDist: 450 };
   if (floorNum <= 9) return { list: ['grunt','grunt','boar','archer','archer','grunt','boar','archer'], minDist: 240, maxDist: 500 };
@@ -1217,7 +1215,7 @@ function punchTick() {
     life: 300, maxLife: 300, type: 'punch', radius: 110,
   });
   updateUI();
- }
+                 }
  function updateMucan(e, dt, d, ang) {
   e.regenTimer -= dt;
   if (e.regenTimer <= 0) {
@@ -1425,7 +1423,7 @@ function updateDio(e, dt, d, ang) {
     }
     return;
   }
-  }
+}
  function updateEnemies(dt) {
   enemies.forEach(e => {
     if (timeStopTimer > 0 && e.type !== 'dio') {
@@ -1813,7 +1811,7 @@ function updateProjectiles(dt) {
     }
   });
   projectiles = projectiles.filter(p => p.life > 0);
-        }
+    }
  function checkChest() {
   chests.forEach(c => {
     if (c.opened) return;
@@ -2180,7 +2178,7 @@ function drawMinimap() {
   ctx.fillText('●血', mx + 4, my + MINIMAP_SIZE + 54);
 
   ctx.restore();
-         }
+ }
  function render() {
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#0f1219';
@@ -2662,7 +2660,7 @@ function drawMinimap() {
     ctx.fillText('你击败了 DIO！', W/2, H/2 + 10);
     ctx.fillText('点击「重开」再来一局', W/2, H/2 + 60);
   }
- }
+       }
    function updateUI() {
     hpBar.style.width = (player.hp / player.maxHp * 100) + '%';
     hpText.textContent = `${player.hp}/${player.maxHp}`;
@@ -2906,7 +2904,6 @@ function drawMinimap() {
 
   updateContinueButton();
 
-  // 首页 BGM 首次交互后播放
   const firstInteraction = () => {
     initAudio();
     if (startScreen && !startScreen.classList.contains('hidden')) {
