@@ -375,8 +375,8 @@
   </div>
 
   <div class="save-toast" id="saveToast">已保存</div>
- </div>
- <script>
+</div>
+<script>
 (function(){
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
@@ -862,9 +862,8 @@
   function isSameEquip(a, b) {
     if (!a || !b) return false;
     return a.name === b.name;
-   
   }
- function getFloorConfig(floorNum) {
+function getFloorConfig(floorNum) {
   if (floorNum <= 3) return { list: ['grunt','grunt','grunt','grunt','grunt'], minDist: 120, maxDist: 320 };
   if (floorNum <= 6) return { list: ['grunt','grunt','grunt','archer','archer','grunt','archer'], minDist: 200, maxDist: 450 };
   if (floorNum <= 9) return { list: ['grunt','grunt','boar','archer','archer','grunt','boar','archer'], minDist: 240, maxDist: 500 };
@@ -1218,7 +1217,7 @@ function punchTick() {
     life: 300, maxLife: 300, type: 'punch', radius: 110,
   });
   updateUI();
-     }
+ }
  function updateMucan(e, dt, d, ang) {
   e.regenTimer -= dt;
   if (e.regenTimer <= 0) {
@@ -1814,8 +1813,8 @@ function updateProjectiles(dt) {
     }
   });
   projectiles = projectiles.filter(p => p.life > 0);
-}
-function checkChest() {
+        }
+ function checkChest() {
   chests.forEach(c => {
     if (c.opened) return;
     const d = Math.hypot(c.x - player.x, c.y - player.y);
@@ -2124,7 +2123,6 @@ function drawMinimap() {
     ctx.fillRect(px - 2, py - 2, 4, 4);
   });
 
-
   healOrbs.forEach(o => {
     if (o.collected) return;
     const px = mx + o.x * scale;
@@ -2142,7 +2140,7 @@ function drawMinimap() {
     ctx.beginPath();
     ctx.arc(px, py, 4, 0, Math.PI*2);
     ctx.fill();
-  });
+  }
 
   enemies.forEach(e => {
     const px = mx + e.x * scale;
@@ -2182,7 +2180,7 @@ function drawMinimap() {
   ctx.fillText('●血', mx + 4, my + MINIMAP_SIZE + 54);
 
   ctx.restore();
-    }
+         }
  function render() {
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#0f1219';
@@ -2664,7 +2662,7 @@ function drawMinimap() {
     ctx.fillText('你击败了 DIO！', W/2, H/2 + 10);
     ctx.fillText('点击「重开」再来一局', W/2, H/2 + 60);
   }
-  }
+ }
    function updateUI() {
     hpBar.style.width = (player.hp / player.maxHp * 100) + '%';
     hpText.textContent = `${player.hp}/${player.maxHp}`;
@@ -2927,6 +2925,3 @@ function drawMinimap() {
 </script>
 </body>
 </html>
-
-
- 
