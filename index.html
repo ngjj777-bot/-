@@ -81,7 +81,7 @@
 .online-input { width: 100%; padding: 10px; border-radius: 10px; border: 2px solid #4e6188; background: #0f1219; color: #eaf0ff; font-family: inherit; font-weight: bold; font-size: 1rem; text-align: center; letter-spacing: 4px; margin-bottom: 10px; }
 .online-code { background: #241d0e; border: 2px solid #ffd966; border-radius: 10px; padding: 14px; margin: 10px 0; color: #ffd966; font-weight: bold; font-size: 1.6rem; letter-spacing: 6px; text-align: center; }
 .online-status { color: #a0c0e0; font-size: 0.75rem; margin: 10px 0; min-height: 20px; }
-   .start-screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 22px; background: #0a0c10; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; padding: 20px; overflow: hidden; }
+  .start-screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 22px; background: #0a0c10; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; padding: 20px; overflow: hidden; }
   .start-screen.hidden { display: none; }
   .start-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; filter: brightness(0.65); }
   .start-title { position: relative; font-size: 2rem; font-weight: bold; color: #ffb347; text-shadow: 0 0 20px #ff6030, 3px 3px 0 #1a0a00; margin-bottom: 24px; letter-spacing: 5px; }
@@ -146,7 +146,7 @@
       <button class="reset-btn" id="resetBtn">重开</button>
     </div>
   </div>
-    <div class="skill-select-overlay" id="skillSelectOverlay">
+  <div class="skill-select-overlay" id="skillSelectOverlay">
     <div class="skill-select-box">
       <div class="skill-select-title">⚔️ 开局选择技能 ⚔️</div>
       <div class="skill-card" data-skill="punch"><div class="skill-name">👊 轰拳</div><div class="skill-desc">范围内敌人5秒内每0.5秒扣0.5血。释放期间不能移动，90%免伤。冷却10秒。</div></div>
@@ -214,7 +214,7 @@
     </div>
   </div>
   <div class="save-toast" id="saveToast">已保存</div>
-</div>
+</div> 
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
 <script>
@@ -245,7 +245,7 @@
   function unlockAtk(n) { if (!codex.unlockedAtk.includes(n)) { codex.unlockedAtk.push(n); saveCodex(); } }
   function unlockDef(n) { if (!codex.unlockedDef.includes(n)) { codex.unlockedDef.push(n); saveCodex(); } }
   function isAtkUnlocked(n) { return codex.unlockedAtk.includes(n); }
-  function isDefUnlocked(n) { return codex.unlockedDef.includes(n); }
+  function isDefUnlocked(n) { return codex.unlockedDef.includes(n); } 
  let audioCtx = null;
 function initAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { audioCtx = null; } } if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); initDioAudio(); initBgm(); }
 function playSound(type) {
@@ -269,7 +269,7 @@ let bgmAudio = null, bgmLoaded = false, bgmPlaying = false;
 function initBgm() { if (bgmLoaded) return; try { bgmAudio = new Audio('bgm.mp3'); bgmAudio.loop = true; bgmAudio.volume = 0.4; bgmLoaded = true; } catch(e) {} }
 function playBgm() { if (!bgmLoaded) initBgm(); if (!bgmAudio || bgmPlaying) return; bgmAudio.play().then(()=>{bgmPlaying=true;}).catch(e=>{}); }
 function pauseBgm() { if (!bgmAudio) return; try { bgmAudio.pause(); bgmPlaying = false; } catch(e) {} }
- const ATK_EQUIPS = [
+const ATK_EQUIPS = [
   { name: '木剑', atk: 2, desc: '+2 攻击' },
   { name: '铁剑', atk: 5, desc: '+5 攻击' },
   { name: '血剑', atk: 4, desc: '+4攻击,回血2', lifesteal: 2 },
@@ -298,7 +298,7 @@ const HEAL_ORB_AMOUNT = 10, HEAL_ORB_SIZE = 26;
 const WORLD_SIZE = 1800, VIEW_SIZE = 480, PLAYER_SIZE = 34, BASE_SPEED = 2.52;
 const BASE_HP = 10, BASE_ATK = 1, ATTACK_RANGE = 52, ATTACK_COOLDOWN = 400, DEFEND_DURATION = 400, SKILL_CD = 10000, MINIMAP_SIZE = 110, MAX_FLOOR = 30;
 const ARENA_SIZE = 800, ARENA_PLAYER_HP = 50, ARENA_DEFEND_CD = 3000, ARENA_DEFEND_DURATION = 500, ARENA_DEFEND_REDUCE = 0.8;
- const ENEMY_TYPES = {
+const ENEMY_TYPES = {
   grunt: { hp: 10, atk: 2, speed: 1.1, size: 30, color: '#6a9d4a', name: '小兵', range: 40, atkCooldown: 900, detect: 340 },
   archer: { hp: 15, atk: 5, speed: 0.9, size: 28, color: '#5b8c5a', name: '弓手', range: 240, atkCooldown: 1600, ranged: true, detect: 420 },
   boar: { hp: 20, atk: 6, speed: 1.7, size: 40, color: '#7a5230', name: '野猪骑士', range: 44, atkCooldown: 1100, detect: 380 },
@@ -345,7 +345,7 @@ function getFloorConfig(f) {
   if (f === 30) return { list: ['gojo','dog','dog'], minDist: 300, maxDist: 450 };
   return { list: ['grunt'], minDist: 200, maxDist: 400 };
 }
- let player = { x: WORLD_SIZE/2, y: WORLD_SIZE/2, hp: BASE_HP, maxHp: BASE_HP, baseAtk: BASE_ATK, facing: 0, defending: false, defendTimer: 0, attackTimer: 0, hitFlash: 0, attackAnim: 0, equipAtk: null, equipDef: [null, null], skill: null, skillCdTimer: 0, punchTimer: 0, punchTickTimer: 0, frozen: false, shieldLayers: 0, stunTimer: 0, lightArmorUsed: false, lanceCombo: 0, lanceTarget: null, slowTimer: 0 };
+let player = { x: WORLD_SIZE/2, y: WORLD_SIZE/2, hp: BASE_HP, maxHp: BASE_HP, baseAtk: BASE_ATK, facing: 0, defending: false, defendTimer: 0, attackTimer: 0, hitFlash: 0, attackAnim: 0, equipAtk: null, equipDef: [null, null], skill: null, skillCdTimer: 0, punchTimer: 0, punchTickTimer: 0, frozen: false, shieldLayers: 0, stunTimer: 0, lightArmorUsed: false, lanceCombo: 0, lanceTarget: null, slowTimer: 0 };
 let enemies = [], chests = [], projectiles = [], particles = [], floatTexts = [], healOrbs = [], spirits = [], tentacles = [];
 let lastOrbFloor = 0, portal = null, floor = 1, killCount = 0, floorEnemyTotal = 0;
 let gameOver = false, gameWin = false, message = '', messageTimer = 0;
@@ -364,7 +364,7 @@ function getPlayerSpeed() { let s = BASE_SPEED; player.equipDef.forEach(e => { i
 function hasDefEquip(p) { return player.equipDef.some(e => e && p(e)); }
 function recalcMaxHp() { const m = getTotalMaxHp(); const d = m - player.maxHp; player.maxHp = m; player.hp = d > 0 ? Math.min(player.hp + d, m) : Math.min(player.hp, m); }
 function isSameEquip(a, b) { return a && b && a.name === b.name; }
- let arenaPlayer = { atk: null, def: [null, null], x: 0, y: 0, hp: ARENA_PLAYER_HP, maxHp: ARENA_PLAYER_HP, facing: 0, defendTimer: 0, defendCD: 0, attackTimer: 0, hitFlash: 0, lightArmorUsed: false, lanceCombo: 0, poisonTimer: 0, poisonDps: 0, slowTimer: 0 };
+let arenaPlayer = { atk: null, def: [null, null], x: 0, y: 0, hp: ARENA_PLAYER_HP, maxHp: ARENA_PLAYER_HP, facing: 0, defendTimer: 0, defendCD: 0, attackTimer: 0, hitFlash: 0, lightArmorUsed: false, lanceCombo: 0, poisonTimer: 0, poisonDps: 0, slowTimer: 0 };
 let arenaOpp = { atk: null, def: [null, null], x: 0, y: 0, hp: ARENA_PLAYER_HP, maxHp: ARENA_PLAYER_HP, facing: 0, defendTimer: 0, defendCD: 0, attackTimer: 0, hitFlash: 0, lightArmorUsed: false, lanceCombo: 0, poisonTimer: 0, poisonDps: 0, isAI: true };
 let arenaState = { active: false, mode: null, difficulty: 'normal', result: null, resultTimer: 0 };
 let arenaProjectiles = [], arenaParticles = [], arenaFloatTexts = [];
@@ -392,7 +392,7 @@ function arenaResetOpp() {
   arenaOpp.lightArmorUsed = false; arenaOpp.lanceCombo = 0;
   arenaOpp.poisonTimer = 0; arenaOpp.poisonDps = 0; arenaOpp.slowTimer = 0;
 }
- function generateFloor(f) {
+function generateFloor(f) {
   enemies = []; chests = []; projectiles = []; particles = []; floatTexts = []; portal = null; tentacles = [];
   timeStopTimer = 0; timeStopOwner = null; timeStopOverlay.classList.remove('show');
   player.x = WORLD_SIZE/2; player.y = WORLD_SIZE/2; player.slowTimer = 0;
@@ -418,8 +418,8 @@ function arenaResetOpp() {
   recalcMaxHp(); updateCamera(true);
   message = `第 ${f} 层 · 敌人 ${enemies.length}`;
   messageTimer = 1800; updateUI();
- }
- function applyAttackEffects(e, atkEq) {
+   }
+function applyAttackEffects(e, atkEq) {
   let dmg = getTotalAtk(), isCrit = false;
   if (atkEq && atkEq.crit && Math.random()<atkEq.crit) { dmg += atkEq.critBonus; isCrit = true; }
   if (atkEq && atkEq.lance) { if (player.lanceTarget===e) player.lanceCombo = Math.min(player.lanceCombo+1,10); else { player.lanceTarget=e; player.lanceCombo=0; } dmg += player.lanceCombo*2; }
@@ -470,7 +470,7 @@ function killEnemy(e, killer) {
   else if (e.isMiniboss) { message = '⚔️ 击败了' + e.name + '！'; messageTimer = 2500; }
   updateUI(); scheduleSave();
 }
- function damagePlayer(amount, isRanged) {
+function damagePlayer(amount, isRanged) {
   if (player.defending || player.stunTimer>0) return false;
   if (hasDefEquip(e=>e.lightArmor) && !player.lightArmorUsed) { player.lightArmorUsed = true; particles.push({x:player.x,y:player.y,life:500,maxLife:500,type:'dodge'}); spawnFloatText(player.x,player.y-PLAYER_SIZE/2,'光明铠·闪避','#ffe060',true); return false; }
   if (hasDefEquip(e=>e.dodge) && Math.random()<0.2) { particles.push({x:player.x,y:player.y,life:500,maxLife:500,type:'dodge'}); spawnFloatText(player.x,player.y-PLAYER_SIZE/2,'MISS','#fff'); return false; }
@@ -518,7 +518,7 @@ function punchTick() {
   particles.push({x:player.x,y:player.y,life:300,maxLife:300,type:'punch',radius:110});
   updateUI();
 }
- function updateNewEnemy(e, dt, d, ang) {
+function updateNewEnemy(e, dt, d, ang) {
   if (e.type==='eye') {
     if (d < e.range && e.atkTimer<=0) {
       e.atkTimer = e.atkCooldown;
@@ -634,7 +634,7 @@ function updateDio(e, dt, d, ang) {
     if (timeStopTimer<=0) { e.skillState='idle'; }
     return;
   }
-}
+  }
  function updateSukuna(e, dt, d, ang) {
   if (e.skillTimer1>0) e.skillTimer1-=dt;
   if (e.skillTimer2>0) e.skillTimer2-=dt;
@@ -694,8 +694,8 @@ function updateGojo(e, dt, d, ang) {
     shake(15,500); playSound('explode');
   }
   if (d>e.range && e.skillState==='idle') { e.x+=Math.cos(ang)*e.speed; e.y+=Math.sin(ang)*e.speed; }
-                                                                     }
- function updateEnemies(dt) {
+}
+function updateEnemies(dt) {
   enemies.forEach(e => {
     if (timeStopTimer>0 && e.type!=='dio' && e.type!=='gojo') { if (e.poisonTimer>0) { e.poisonTimer-=dt; e.hp-=e.poisonDps*(dt/1000); if (e.hp<=0) killEnemy(e,'poison'); } return; }
     e.atkTimer -= dt;
@@ -753,8 +753,8 @@ function updateGojo(e, dt, d, ang) {
     e.x=clamp(e.x,e.size,WORLD_SIZE-e.size); e.y=clamp(e.y,e.size,WORLD_SIZE-e.size);
   });
   for (let i=0;i<enemies.length;i++) for (let j=i+1;j<enemies.length;j++) { const a=enemies[i], b=enemies[j]; const dd=dist(a,b), md=a.size/2+b.size/2; if (dd<md && dd>0.01) { const ov=(md-dd)/2, ang=Math.atan2(b.y-a.y,b.x-a.x); a.x-=Math.cos(ang)*ov*0.5; a.y-=Math.sin(ang)*ov*0.5; b.x+=Math.cos(ang)*ov*0.5; b.y+=Math.sin(ang)*ov*0.5; } }
-                                                                                                                                                                                                                                                   }
- function updateSpirits(dt) {
+       }
+function updateSpirits(dt) {
   spirits.forEach(s=>{
     s.life-=dt; if (s.hitFlash>0) s.hitFlash-=dt; if (s.attackTimer>0) s.attackTimer-=dt;
     let n=null, nd=Infinity;
@@ -866,7 +866,7 @@ function updateUI() {
   [slotDef1, slotDef2].forEach((el, i)=>{ if (player.equipDef[i]) { el.textContent = `防御${i+1}: ${player.equipDef[i].name}`; el.classList.add('filled'); } else { el.textContent = `防御${i+1}: 空`; el.classList.remove('filled'); } });
   if (player.skill) { const sn={punch:'👊 轰拳', bloodslash:'🩸 血斩', shieldfist:'🥊 护盾拳'}; const cd=(player.skillCdTimer/1000).toFixed(1); if (player.skillCdTimer>0) { skillInfo.textContent=`${sn[player.skill]} (CD ${cd}s)`; skillBtn.classList.add('cooling'); } else { skillInfo.textContent=`${sn[player.skill]} 就绪`; skillBtn.classList.remove('cooling'); } } else skillInfo.textContent='技能: 未选择';
                                     }
-  function drawSprite(img, cx, cy, size, flip, fb, fl) {
+              function drawSprite(img, cx, cy, size, flip, fb, fl) {
   ctx.save(); ctx.fillStyle='#00000066'; ctx.beginPath(); ctx.ellipse(cx,cy+size*0.42,size*0.42,size*0.18,0,0,Math.PI*2); ctx.fill(); ctx.restore();
   if (img && img.complete && img.naturalWidth>0) { ctx.save(); if (flip) { ctx.translate(cx,cy); ctx.scale(-1,1); ctx.drawImage(img,-size/2,-size/2,size,size); } else ctx.drawImage(img,cx-size/2,cy-size/2,size,size); ctx.restore(); }
   else { ctx.fillStyle=fb; ctx.beginPath(); ctx.arc(cx,cy,size/2,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font=`bold ${size*0.6}px "Courier New"`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(fl||'?',cx,cy); }
@@ -934,8 +934,8 @@ function drawMinimap() {
   enemies.forEach(e=>{ const px=mx+e.x*sc, py=my+e.y*sc; ctx.fillStyle = e.isBoss?'#ffd700':e.isMiniboss?'#ff80c0':'#ff4d4d'; ctx.beginPath(); ctx.arc(px,py,e.isBoss?5:3,0,Math.PI*2); ctx.fill(); });
   const px=mx+player.x*sc, py=my+player.y*sc; ctx.fillStyle='#4ab3e6'; ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fill();
   ctx.restore();
-}
- function arenaResetForBattle() {
+                                                 }
+              function arenaResetForBattle() {
   arenaPlayer.atk = arenaSetupState.atk; arenaPlayer.def = [...arenaSetupState.def];
   arenaPlayer.x = ARENA_SIZE/4; arenaPlayer.y = ARENA_SIZE/2;
   arenaPlayer.maxHp = ARENA_PLAYER_HP + arenaGetHpBonus(arenaPlayer.def);
@@ -1105,8 +1105,8 @@ function sendOnlineState() {
   if (!onlineState.roomRef || !onlineState.role) return;
   const data = { x:arenaPlayer.x, y:arenaPlayer.y, hp:arenaPlayer.hp, facing:arenaPlayer.facing, defendTimer:arenaPlayer.defendTimer, t:Date.now() };
   try { onlineState.roomRef.child(onlineState.role).set(data); } catch(e) {}
-   }
- function renderArena() {
+            }
+              function renderArena() {
   ctx.clearRect(0,0,W,H); ctx.fillStyle='#0f1219'; ctx.fillRect(0,0,W,H);
   const ox=(W-ARENA_SIZE)/2, oy=(H-ARENA_SIZE)/2;
   ctx.save(); ctx.fillStyle='#1a1e26'; ctx.fillRect(ox,oy,ARENA_SIZE,ARENA_SIZE);
@@ -1151,8 +1151,8 @@ function sendOnlineState() {
     else { ctx.fillStyle='#ff6060'; ctx.fillText('💀 失败', W/2, H/2-20); }
     ctx.font=`${W*0.04}px "Courier New"`; ctx.fillStyle='#a0c0e0'; ctx.fillText('返回主菜单中...', W/2, H/2+50);
   }
-                                 }
-      function renderCodex() {
+                             }
+                function renderCodex() {
     const ag = $('codexAtkGrid'), dg = $('codexDefGrid');
     ag.innerHTML=''; dg.innerHTML='';
     ATK_EQUIPS.forEach(eq=>{ const d=document.createElement('div'); d.className='codex-item'+(isAtkUnlocked(eq.name)?' unlocked':''); d.innerHTML=`<div class="ci-name">${isAtkUnlocked(eq.name)?eq.name:'？？？'}</div><div class="ci-desc">${isAtkUnlocked(eq.name)?eq.desc:'未解锁'}</div>`; ag.appendChild(d); });
